@@ -29,7 +29,11 @@ export type ModelFieldFilter = ModelFieldEqualsFilter | ModelFieldMatchFilter
 
 export type CompiledModelFieldFilter = ModelFieldEqualsFilter | (Omit<ModelFieldMatchFilter, 'match'> & { match: RegExp })
 
-export type ModelInfoFormat = 'litellm' | 'models.dev' | (string & {})
+export enum ModelInfoFormat {
+  LiteLLM = 'litellm',
+  ModelsDev = 'models.dev',
+  VLLM = 'vllm',
+}
 
 export interface ProviderDiscoveryConfig {
   enabled?: boolean

@@ -35,6 +35,13 @@ export enum ModelInfoFormat {
   VLLM = 'vllm',
 }
 
+export const DEFAULT_CACHE_TTL_SECONDS = 86400
+
+export interface ProviderDiscoveryCacheConfig {
+  enabled?: boolean
+  ttlSeconds?: number
+}
+
 export interface ProviderDiscoveryConfig {
   enabled?: boolean
   endpoint?: string
@@ -48,6 +55,7 @@ export interface ProviderDiscoveryConfig {
     excludeBy?: ModelFieldFilter[]
   }
   smartModelName?: boolean
+  cache?: ProviderDiscoveryCacheConfig
 }
 
 export interface DiscoveryConfig {

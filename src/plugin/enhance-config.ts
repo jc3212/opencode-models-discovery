@@ -3,10 +3,11 @@ import path from 'node:path'
 import { xdgData } from 'xdg-basedir'
 import { ToastNotifier } from '../ui/toast-notifier'
 import { categorizeModel, formatModelName, extractModelOwner } from '../utils'
-import { normalizeBaseURL, discoverModelsFromProvider, discoverModelInfoFromProvider, canDiscoverModels } from '../utils/openai-compatible-api'
+import { normalizeBaseURL, discoverModelsFromProvider, discoverModelInfoFromProvider, canDiscoverModels, isValidModel } from '../utils/openai-compatible-api'
 import { createModelInfoEnricher, isSupportedModelInfoFormat, type ModelInfoEnricher } from '../utils/model-info'
-import { getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
+import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
 import { fetchModelsDevData } from '../utils/models-dev-fetcher'
+import { isInventoryFresh, mergeModelOverride, ProviderModelStore, type ProviderModelState } from './provider-model-store'
 import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
 import type { OpenAIModel } from '../types'
@@ -35,6 +36,37 @@ interface OpenCodeAuth {
 type HostClient = 'opencode' | 'mimocode'
 
 const RESOLVED_PROVIDERS_TIMEOUT_MS = 250
+const DEFAULT_LITELLM_MODEL_INFO_ENDPOINT = '/v1/model/info'
+const defaultProviderModelStore = new ProviderModelStore()
+
+export const providerModelStoreTestUtils = {
+  setStore(store: ProviderModelStore): void {
+    currentProviderModelStore = store
+  },
+  resetStore(): void {
+    currentProviderModelStore = defaultProviderModelStore
+  },
+}
+let currentProviderModelStore = defaultProviderModelStore
+const injectedModelsByConfig = new WeakMap<object, Map<string, Map<string, unknown>>>()
+
+function getInjectedModels(config: object, providerID: string): Map<string, unknown> {
+  return injectedModelsByConfig.get(config)?.get(providerID) ?? new Map()
+}
+
+function replaceInjectedModels(config: object, providerID: string, models: Record<string, unknown>): void {
+  let providers = injectedModelsByConfig.get(config)
+  if (!providers) {
+    providers = new Map()
+    injectedModelsByConfig.set(config, providers)
+  }
+  providers.set(providerID, new Map(Object.entries(models)))
+}
+
+function getExplicitModels(config: object, providerID: string, models: Record<string, any>): Record<string, any> {
+  const injectedModels = getInjectedModels(config, providerID)
+  return Object.fromEntries(Object.entries(models).filter(([modelID, model]) => injectedModels.get(modelID) !== model))
+}
 
 async function getResolvedProvidersByID(
   client: PluginInput['client'],
@@ -183,7 +215,6 @@ export async function enhanceConfig(
       const p = providerConfig as any
       const providerDiscoveryConfig = p.options?.modelsDiscovery ?? {}
       const modelsEndpoint = providerDiscoveryConfig.endpoint ?? '/v1/models'
-      const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint
       const modelInfoFormat = providerDiscoveryConfig.modelInfoFormat
       const filterNonChat = providerDiscoveryConfig.filterNonChat !== false
       const forceDiscoveryEnabled = providerDiscoveryConfig.enabled === true
@@ -206,41 +237,73 @@ export async function enhanceConfig(
         continue
       }
 
-      const apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
-
-      let models: OpenAIModel[]
-      const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint)
-      if (!discovery.ok) {
-        logger.warn('Provider model discovery failed', {
-          provider: providerName,
-          baseURL,
-          endpoint: modelsEndpoint,
-        })
-        continue
+      const cacheConfig = providerDiscoveryConfig.cache
+      const cacheEnabled = cacheConfig?.enabled === true
+      const ttlSeconds = cacheConfig?.ttlSeconds ?? DEFAULT_CACHE_TTL_SECONDS
+      const cacheIdentity = {
+        id: providerName,
+        baseURL,
+        endpoint: modelsEndpoint,
       }
+      let persistedState: ProviderModelState | undefined
+      let usingPersistedModels = false
+      let apiKey: string | undefined
 
-      models = discovery.models
+      let models: OpenAIModel[] = []
+      let discoveredModels: Record<string, any> = {}
+      if (cacheEnabled) {
+        persistedState = await currentProviderModelStore.read(cacheIdentity)
+        if (persistedState && isInventoryFresh(persistedState, ttlSeconds)) {
+          discoveredModels = persistedState.models
+          usingPersistedModels = true
+        } else {
+          apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
+          const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint)
+          if (!discovery.ok) {
+            const existingModels = getExplicitModels(config, providerName, p.models || {})
+            p.models = existingModels
+            replaceInjectedModels(config, providerName, {})
+            logger.warn('Provider model discovery failed', {
+              provider: providerName,
+              baseURL,
+              endpoint: modelsEndpoint,
+            })
+            continue
+          }
 
-      if (models.length === 0) {
-        continue
+          models = discovery.models.filter(isValidModel)
+        }
+      } else {
+        apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
+        const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint)
+        if (!discovery.ok) {
+          logger.warn('Provider model discovery failed', {
+            provider: providerName,
+            baseURL,
+            endpoint: modelsEndpoint,
+          })
+          continue
+        }
+        models = discovery.models.filter(isValidModel)
       }
 
       let modelInfoEnricher: ModelInfoEnricher | undefined
-      if (modelInfoFormat && !isSupportedModelInfoFormat(modelInfoFormat)) {
+      if (!usingPersistedModels && modelInfoFormat && !isSupportedModelInfoFormat(modelInfoFormat)) {
         logger.warn('Unsupported provider model info format', {
           provider: providerName,
           format: modelInfoFormat,
         })
-      } else if (modelInfoFormat === ModelInfoFormat.ModelsDev) {
+      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.ModelsDev) {
         const modelsDevCache = await fetchModelsDevData()
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelsDevCache, { filterNonChat })
         logger.info('Loaded models.dev data', {
           provider: providerName,
           count: modelsDevCache.size,
         })
-      } else if (modelInfoFormat === ModelInfoFormat.VLLM) {
+      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.VLLM) {
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
-      } else if (typeof modelInfoEndpoint === 'string' && modelInfoEndpoint.length > 0 && modelInfoFormat) {
+      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LiteLLM) {
+        const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LITELLM_MODEL_INFO_ENDPOINT
         const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint)
         if (modelInfoDiscovery.ok) {
           modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data, { filterNonChat })
@@ -254,8 +317,7 @@ export async function enhanceConfig(
         }
       }
 
-      const existingModels = p.models || {}
-      const discoveredModels: Record<string, any> = {}
+      const existingModels = getExplicitModels(config, providerName, p.models || {})
       let chatModelsCount = 0
 
       const hasProviderModelRegexFilter = !!providerDiscoveryConfig.models?.includeRegex?.length || !!providerDiscoveryConfig.models?.excludeRegex?.length
@@ -263,9 +325,9 @@ export async function enhanceConfig(
       const providerModelFieldFilters = getProviderModelFieldFilters(providerDiscoveryConfig, logger.child({ category: 'filtering' }))
       const smartModelNameEnabled = providerDiscoveryConfig.smartModelName === true
 
-      for (const model of models) {
-        const modelKey = model.id
-        if (!existingModels[modelKey]) {
+      if (!usingPersistedModels) {
+        for (const model of models) {
+          const modelKey = model.id
           if (!shouldDiscoverModelByFields(model, providerModelFieldFilters)) {
             continue
           }
@@ -302,21 +364,30 @@ export async function enhanceConfig(
           }
 
           modelInfoEnricher?.applyModelInfo(modelConfig, model.id, model)
-
           discoveredModels[modelKey] = modelConfig
+        }
+
+        if (cacheEnabled && !await currentProviderModelStore.saveModels(cacheIdentity, discoveredModels, persistedState)) {
+          logger.debug('Could not persist discovered provider models', { provider: providerName })
         }
       }
 
-      if (Object.keys(discoveredModels).length > 0) {
-        p.models = {
-          ...existingModels,
-          ...discoveredModels,
-        }
+      const modelsWithOverrides = Object.fromEntries(Object.entries(discoveredModels).map(([modelID, model]) => [
+        modelID,
+        mergeModelOverride(model, persistedState?.overrides?.[modelID]),
+      ]))
 
+      p.models = {
+        ...modelsWithOverrides,
+        ...existingModels,
+      }
+      replaceInjectedModels(config, providerName, modelsWithOverrides)
+
+      if (Object.keys(modelsWithOverrides).length > 0) {
         openAICompatibleProviders.push({
           name: displayName,
           baseURL,
-          models: discoveredModels
+          models: modelsWithOverrides
         })
       }
     }

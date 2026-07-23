@@ -1,7 +1,12 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { promises as fs } from 'node:fs'
+import { mkdtemp, rm } from 'node:fs/promises'
+import path from 'node:path'
+import os from 'node:os'
 import { ModelDiscoveryPlugin } from '../src/index.ts'
 import { modelsDevTestUtils } from '../src/utils/models-dev-fetcher.ts'
+import { providerModelStoreTestUtils } from '../src/plugin/enhance-config.ts'
+import { ProviderModelStore } from '../src/plugin/provider-model-store.ts'
 
 const mockFetch = vi.hoisted(() => vi.fn())
 
@@ -59,6 +64,7 @@ if (!global.AbortSignal.timeout) {
 describe('ModelDiscovery Plugin', () => {
   let mockClient: any
   let pluginHooks: any
+  let cacheRoot: string
 
   beforeEach(async () => {
     mockFetch.mockClear()
@@ -69,6 +75,8 @@ describe('ModelDiscovery Plugin', () => {
     delete process.env.MIMOCODE
     delete process.env.MIMOCODE_PID
     delete process.env.OPENCODE_MODELS_DISCOVERY_DEFAULT_ENABLED
+    cacheRoot = await mkdtemp(path.join(os.tmpdir(), 'models-discovery-plugin-'))
+    providerModelStoreTestUtils.setStore(new ProviderModelStore(cacheRoot))
 
     mockClient = {
       app: {
@@ -100,13 +108,15 @@ describe('ModelDiscovery Plugin', () => {
     pluginHooks = await ModelDiscoveryPlugin(mockInput)
   })
 
-  afterEach(() => {
+  afterEach(async () => {
     delete process.env.OPENCODE_AUTH_CONTENT
     delete process.env.OPENCODE
     delete process.env.OPENCODE_PID
     delete process.env.MIMOCODE
     delete process.env.MIMOCODE_PID
     delete process.env.OPENCODE_MODELS_DISCOVERY_DEFAULT_ENABLED
+    providerModelStoreTestUtils.resetStore()
+    await rm(cacheRoot, { recursive: true, force: true })
     vi.restoreAllMocks()
   })
 
@@ -487,6 +497,122 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:11434/v1/models', expect.objectContaining({
         method: 'GET'
       }))
+    })
+
+    it('uses a fresh persisted inventory without resolving credentials or requesting models', async () => {
+      const store = new ProviderModelStore(cacheRoot)
+      await store.saveModels({
+        id: 'cached',
+        baseURL: 'http://127.0.0.1:8000',
+        endpoint: '/v1/models',
+      }, { 'cached-model': { id: 'cached-model', name: 'Cached Model', reasoning: true } })
+
+      const config: any = {
+        provider: {
+          cached: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8000/v1',
+              modelsDiscovery: { cache: { enabled: true } },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(config.provider.cached.models['cached-model']).toBeDefined()
+      expect(config.provider.cached.models['cached-model'].reasoning).toBe(true)
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(mockClient.config.providers).not.toHaveBeenCalled()
+    })
+
+    it('persists only filtered enriched models and reuses their metadata', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [
+            { id: 'chat-model', object: 'model', max_model_len: 32768 },
+            { id: 'embedding-model', object: 'model', max_model_len: 8192 },
+          ],
+        }),
+      })
+
+      const config: any = {
+        provider: {
+          cached: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8000/v1',
+              modelsDiscovery: {
+                modelInfoFormat: 'vllm',
+                cache: { enabled: true },
+              },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      const store = new ProviderModelStore(cacheRoot)
+      const state = await store.read({
+        id: 'cached',
+        baseURL: 'http://127.0.0.1:8000',
+        endpoint: '/v1/models',
+      })
+      expect(state?.models).toEqual({
+        'chat-model': expect.objectContaining({
+          id: 'chat-model',
+          limit: { context: 32768, output: 32768 },
+        }),
+      })
+      expect(state?.models['embedding-model']).toBeUndefined()
+
+      const secondConfig: any = {
+        provider: {
+          cached: {
+            npm: '@ai-sdk/openai-compatible',
+            options: config.provider.cached.options,
+            models: {},
+          },
+        },
+      }
+      mockFetch.mockClear()
+      await pluginHooks.config(secondConfig)
+
+      expect(secondConfig.provider.cached.models['chat-model'].limit).toEqual({ context: 32768, output: 32768 })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('does not inject expired inventory after a failed refresh but keeps explicit models', async () => {
+      const store = new ProviderModelStore(cacheRoot)
+      await store.saveModels({
+        id: 'expired',
+        baseURL: 'http://127.0.0.1:8000',
+        endpoint: '/v1/models',
+      }, { 'stale-model': { id: 'stale-model', name: 'Stale Model' } })
+      mockFetch.mockResolvedValueOnce({ ok: false })
+
+      const config: any = {
+        provider: {
+          expired: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8000/v1',
+              modelsDiscovery: { cache: { enabled: true, ttlSeconds: 0 } },
+            },
+            models: { explicit: { id: 'explicit', name: 'Explicit model' } },
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(config.provider.expired.models).toEqual({ explicit: { id: 'explicit', name: 'Explicit model' } })
+      expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
     it('should use resolved provider key from OpenCode auth when options.apiKey is absent', async () => {
@@ -910,7 +1036,6 @@ describe('ModelDiscovery Plugin', () => {
             options: {
               baseURL: 'http://127.0.0.1:4000/v1',
               modelsDiscovery: {
-                modelInfoEndpoint: '/v1/model/info',
                 modelInfoFormat: 'litellm'
               }
             },

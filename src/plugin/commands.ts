@@ -87,9 +87,12 @@ Use provider-level configuration under provider.<id>.options.modelsDiscovery. Pr
             "excludeBy": [{ "field": "available", "equals": false }]
           },
           "smartModelName": true,
-          "modelInfoEndpoint": "/v1/model/info",
           "modelInfoFormat": "litellm",
-          "filterNonChat": true
+          "filterNonChat": true,
+          "cache": {
+            "enabled": true,
+            "ttlSeconds": 86400
+          }
         }
       }
     }
@@ -115,9 +118,11 @@ Supported plugin options under provider.<id>.options.modelsDiscovery:
 - models.excludeBy: deny-list for top-level raw fields returned in the provider's /v1/models response; each rule uses exactly one of equals or match
 - smartModelName: use friendlier display names for discovered models
 - modelInfoFormat="models.dev": enrich from the public models.dev index without modelInfoEndpoint
-- modelInfoEndpoint plus modelInfoFormat="litellm": enrich from a LiteLLM-compatible model info endpoint
+- modelInfoFormat="litellm": enrich from a LiteLLM-compatible /v1/model/info endpoint; modelInfoEndpoint optionally overrides the path
 - modelInfoFormat="vllm": for vLLM-compatible providers whose raw /v1/models entries include a positive numeric max_model_len; without another request, sets limit.context and limit.output for matching discovered models
 - filterNonChat: when LiteLLM model info is available, skip non-chat models by default
+- cache.enabled: opt in to a provider-scoped persisted discovery cache of filtered and enriched model configurations; defaults to false
+- cache.ttlSeconds: non-negative finite cache lifetime in seconds; defaults to 86400
 
 Recommended defaults:
 - omit modelsDiscovery.enabled when the user is fine with discovery defaulting on
@@ -135,8 +140,18 @@ Recommended defaults:
 - avoid configuring both includeBy field="id" match rules and includeRegex unless the user wants an intersection with legacy id-only shortcut behavior
 - use smartModelName=true only when the user wants friendlier display names
 - use modelInfoFormat="models.dev" for models.dev metadata enrichment
-- use modelInfoEndpoint and modelInfoFormat="litellm" for LiteLLM-compatible model info endpoints
+- use modelInfoFormat="litellm" for LiteLLM-compatible /v1/model/info; set modelInfoEndpoint only when the provider uses another path
 - use modelInfoFormat="vllm" only when the provider's /v1/models response exposes max_model_len; it is not a standard OpenAI-compatible field, does not require modelInfoEndpoint, and does not infer other capabilities
+- configure caching only when the user requests it; it is disabled by default
+- the persisted discovery cache belongs to this plugin and is not a replacement for opencode.json
+
+When the user asks to manage the persisted discovery cache:
+- identify the selected provider from editable OpenCode configuration, then resolve the plugin data directory with xdg-basedir (XDG_DATA_HOME when set, otherwise its platform fallback) and inspect only opencode-models-discovery/providers/provider-<encoded-provider-id>.json beneath it
+- before editing, show cached models, last successful fetch time, cache TTL validity, and existing overrides
+- model overrides are provider-owned configuration fragments applied only while that model exists in the current valid cached model set; an override for a missing model remains saved but inactive until the provider returns it
+- ask for confirmation before removing an override or invalidating/removing cached models
+- for a force refresh, invalidate or remove only the cached discovered models and preserve overrides
+- never edit OpenCode or Mimocode auth stores, API keys, authorization headers, or managed host configuration while managing saved state
 
 Provider compatibility guidance:
 - Discovery works for @ai-sdk/openai-compatible providers by default.

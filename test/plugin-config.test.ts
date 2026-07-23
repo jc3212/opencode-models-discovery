@@ -1,5 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { isSupportedModelInfoFormat } from '../src/utils/model-info'
+import { validateConfig } from '../src/utils/validation'
+import { DEFAULT_CACHE_TTL_SECONDS } from '../src/types/plugin-config'
 
 describe('JSON config struct parsing', () => {
   function parse(json: string): Record<string, unknown> {
@@ -21,6 +23,30 @@ describe('JSON config struct parsing', () => {
     expect(config.modelInfoFormat).toBeUndefined()
   })
 
+  it('uses a 24-hour default cache TTL and validates cache options', () => {
+    expect(DEFAULT_CACHE_TTL_SECONDS).toBe(86400)
+
+    const validation = validateConfig({
+      provider: {
+        local: {
+          npm: '@ai-sdk/openai-compatible',
+          options: {
+            baseURL: 'http://127.0.0.1:8000/v1',
+            modelsDiscovery: {
+              cache: { enabled: 'yes', ttlSeconds: -1 },
+            },
+          },
+        },
+      },
+    })
+
+    expect(validation.isValid).toBe(false)
+    expect(validation.errors).toEqual(expect.arrayContaining([
+      "Provider 'local' modelsDiscovery.cache.enabled must be a boolean",
+      "Provider 'local' modelsDiscovery.cache.ttlSeconds must be a non-negative finite number",
+    ]))
+  })
+
   it('handles a full provider discovery config from JSON', () => {
     const json = `{
       "enabled": true,
@@ -34,6 +60,12 @@ describe('JSON config struct parsing', () => {
     }`
     const config = parse(json)
     expect(config.modelInfoFormat).toBe('litellm')
+    expect(isSupportedModelInfoFormat(config.modelInfoFormat)).toBe(true)
+  })
+
+  it('allows LiteLLM enrichment without an explicit modelInfoEndpoint', () => {
+    const config = parse('{"modelInfoFormat":"litellm"}')
+    expect(config.modelInfoEndpoint).toBeUndefined()
     expect(isSupportedModelInfoFormat(config.modelInfoFormat)).toBe(true)
   })
 })

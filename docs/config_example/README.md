@@ -16,6 +16,7 @@ Do not paste secrets into public issues or pull requests. Configure provider cre
 
 ## Examples
 
+- [AI-ROUTER](ai-router.md)
 - [DeepSeek](deepseek.md)
 
 ## Community Example PR Scope

@@ -257,6 +257,8 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('excludeBy')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="models.dev"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="litellm"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="vllm"')
+        expect(config.command['models-discovery:config'].template).toContain('max_model_len')
         expect(config.command['models-discovery:config'].template).toContain('restart opencode')
 
         expect(mockClient.tui.showToast).not.toHaveBeenCalled()

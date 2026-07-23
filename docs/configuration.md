@@ -39,7 +39,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.enabled` | `boolean` | Force enable or disable discovery for a single provider |
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
 | `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Provider-specific model info endpoint path. Metadata enrichment is disabled when omitted |
-| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"` and `"models.dev"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"`, `"models.dev"`, and `"vllm"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
 | `provider.<name>.options.modelsDiscovery.models.excludeRegex` | `string[]` | Shortcut regex deny-list for discovered model ids only |
@@ -145,12 +145,13 @@ Community provider examples live in [`docs/config_example/`](config_example/).
 
 The generic OpenAI-compatible `/v1/models` endpoint only guarantees a small model list shape. Extra metadata such as context limits, tool calling, reasoning, image input, or structured output is provider-specific, so metadata enrichment is opt-in.
 
-The plugin currently supports two model info formats:
+The plugin currently supports three model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
 | `"litellm"` | Provider-specific model info endpoint | Yes | Uses LiteLLM `/v1/model/info` responses |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
+| `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
 
 ### LiteLLM Model Info
 
@@ -186,6 +187,34 @@ When model info is available, the plugin uses LiteLLM `model_info` fields to pop
 - `supports_reasoning` enables `reasoning`
 - `supports_*_reasoning_effort` and `supported_openai_params` create reasoning `variants`
 - By default, entries whose `model_info.mode` is not `chat` are skipped
+
+### vLLM Model Info
+
+Use `modelInfoFormat: "vllm"` for a vLLM-compatible provider whose `/v1/models` response includes a numeric `max_model_len` field for each model. This does not make another metadata request.
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "local-vllm": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Local vLLM",
+      "options": {
+        "baseURL": "http://127.0.0.1:8000/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "vllm"
+        }
+      },
+      "models": {}
+    }
+  }
+}
+```
+
+For each discovered model with a positive numeric `max_model_len`, the plugin sets `limit.context` and `limit.output` to that value. `max_model_len` represents the total request sequence length shared by prompt and generated tokens; it is not used as an independent input limit.
+
+`max_model_len` is not part of the standard OpenAI-compatible `/v1/models` response. If a vLLM deployment or proxy does not expose it, discovery still succeeds but no limit is added. This format does not infer reasoning, tool-calling, modalities, or other capabilities.
 
 ### models.dev Metadata
 

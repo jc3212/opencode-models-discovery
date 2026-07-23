@@ -33,6 +33,7 @@ export function validateConfig(config: any): ValidationResult {
 
       if (discoveryConfig && typeof discoveryConfig === 'object') {
         warnMisplacedModelFieldFilters(providerName, discoveryConfig, warnings)
+        validateCache(providerName, discoveryConfig.cache, errors)
       }
     }
   }
@@ -41,6 +42,27 @@ export function validateConfig(config: any): ValidationResult {
     isValid: errors.length === 0,
     errors,
     warnings
+  }
+}
+
+function validateCache(providerName: string, value: unknown, errors: string[]): void {
+  if (value === undefined) {
+    return
+  }
+
+  if (!value || typeof value !== 'object' || Array.isArray(value)) {
+    errors.push(`Provider '${providerName}' modelsDiscovery.cache must be an object`)
+    return
+  }
+
+  const cache = value as Record<string, unknown>
+  if (cache.enabled !== undefined && typeof cache.enabled !== 'boolean') {
+    errors.push(`Provider '${providerName}' modelsDiscovery.cache.enabled must be a boolean`)
+  }
+
+  if (cache.ttlSeconds !== undefined &&
+    (typeof cache.ttlSeconds !== 'number' || !Number.isFinite(cache.ttlSeconds) || cache.ttlSeconds < 0)) {
+    errors.push(`Provider '${providerName}' modelsDiscovery.cache.ttlSeconds must be a non-negative finite number`)
   }
 }
 

@@ -38,7 +38,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 |--------|------|-------------|
 | `provider.<name>.options.modelsDiscovery.enabled` | `boolean` | Force enable or disable discovery for a single provider |
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
-| `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Provider-specific model info endpoint path. Metadata enrichment is disabled when omitted |
+| `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override the LiteLLM model-info endpoint path. Defaults to `/v1/model/info` when `modelInfoFormat` is `"litellm"` |
 | `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"`, `"models.dev"`, and `"vllm"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
@@ -46,6 +46,8 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.models.includeBy` | `{ field: string, equals: string \| number \| boolean \| null }[]` or `{ field: string, match: string }[]` | Allow-list for top-level raw provider model fields |
 | `provider.<name>.options.modelsDiscovery.models.excludeBy` | `{ field: string, equals: string \| number \| boolean \| null }[]` or `{ field: string, match: string }[]` | Deny-list for top-level raw provider model fields |
 | `provider.<name>.options.modelsDiscovery.smartModelName` | `boolean` | Use human-friendly display names instead of raw discovered model ids |
+| `provider.<name>.options.modelsDiscovery.cache.enabled` | `boolean` | Opt in to provider-scoped cached filtered and enriched model configurations; defaults to `false` |
+| `provider.<name>.options.modelsDiscovery.cache.ttlSeconds` | non-negative finite `number` | Cache lifetime in seconds; defaults to `86400` |
 
 Recommended approach:
 
@@ -55,6 +57,35 @@ Recommended approach:
 4. Use OpenCode `/connect` credentials or `provider.<name>.options.apiKey` for secrets; do not duplicate API keys unless needed.
 
 If `provider.<name>.options.modelsDiscovery.endpoint` is omitted, the plugin uses `/v1/models`.
+
+## Persisted Model Discovery Cache
+
+Caching is disabled unless `modelsDiscovery.cache.enabled` is explicitly `true`. When enabled, a provider's latest successful filtered and metadata-enriched discovered model configurations are cached in plugin-owned XDG data at:
+
+```text
+${XDG_DATA_HOME}/opencode-models-discovery/providers/provider-<encoded-provider-id>.json
+```
+
+When `XDG_DATA_HOME` is unset, the plugin uses the `xdg-basedir` data-directory fallback. Provider ids are encoded before being used in file names. Cache files are never written to OpenCode or Mimocode auth locations, including `${xdgData}/opencode/auth.json` and `${xdgData}/mimocode/auth.json`.
+
+```json
+{
+  "modelsDiscovery": {
+    "cache": {
+      "enabled": true,
+      "ttlSeconds": 86400
+    }
+  }
+}
+```
+
+A fresh cached model set is injected without requesting the provider models endpoint, resolving credentials, or repeating metadata enrichment. Once expired, the plugin refreshes it live. If the refresh fails, the expired cached models are not injected; only explicit `provider.<name>.models` entries remain active.
+
+Each cache file contains a version, provider id, normalized base URL, endpoint, fetch time, and the final discovered model configurations, including enriched OpenCode capability metadata. Models rejected by filters, categorization, or metadata enrichment eligibility are not cached. It never contains API keys, authorization headers, credentials, or raw model-info endpoint responses. A cache file with another provider identity or an unsupported schema version is treated as a cache miss.
+
+Saved per-model overrides are separate from plugin-generated cached model configurations and are managed through `/models-discovery:config`. Overrides merge recursively for objects, replace arrays, cannot change `id`, and apply only when the model is present in the current valid discovered model set. Explicit `provider.<name>.models` configuration is applied last and remains higher priority. An override for a model absent from a refreshed model set stays saved but inactive until that model returns.
+
+See [Persisted Model Discovery Cache](persisted-model-discovery.md) for the complete cache schema, lifecycle, override behavior, and security boundary.
 
 ## Default Enablement
 
@@ -149,7 +180,7 @@ The plugin currently supports three model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
-| `"litellm"` | Provider-specific model info endpoint | Yes | Uses LiteLLM `/v1/model/info` responses |
+| `"litellm"` | Provider-specific model info endpoint | No | Uses `/v1/model/info` by default; set `modelInfoEndpoint` to override it |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
 
@@ -157,7 +188,7 @@ The plugin currently supports three model info formats:
 
 LiteLLM exposes a richer `/v1/model/info` endpoint in addition to the OpenAI-compatible `/v1/models` endpoint.
 
-Configure both `modelInfoEndpoint` and `modelInfoFormat` to enable it for a provider.
+Set `modelInfoFormat` to `"litellm"` to enable it. The plugin requests `/v1/model/info` by default; set `modelInfoEndpoint` only when the provider uses another path.
 
 ```json
 {
@@ -171,7 +202,6 @@ Configure both `modelInfoEndpoint` and `modelInfoFormat` to enable it for a prov
         "modelsDiscovery": {
           "enabled": true,
           "endpoint": "/v1/models",
-          "modelInfoEndpoint": "/v1/model/info",
           "modelInfoFormat": "litellm"
         }
       },
@@ -254,6 +284,8 @@ When a discovered model can be matched to models.dev metadata, the plugin may po
 - `structured_output`
 - `temperature`
 - `modalities`
+
+The current models.dev data uses a flat `provider/model`-keyed object. Its `limit` object is singular, and its `context`, `input`, and `output` fields are independently optional. `structured_output` and `temperature` may also be omitted; the plugin leaves omitted fields unset rather than inferring `false`. The current models.dev dataset does not provide `variants` metadata.
 
 Matching is intentionally conservative:
 

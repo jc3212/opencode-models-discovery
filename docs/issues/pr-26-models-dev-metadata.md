@@ -123,7 +123,6 @@ Use LiteLLM model info with:
 ```json
 {
   "modelsDiscovery": {
-    "modelInfoEndpoint": "/v1/model/info",
     "modelInfoFormat": "litellm"
   }
 }

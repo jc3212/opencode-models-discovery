@@ -19,6 +19,7 @@ Originally inspired by [opencode-lmstudio](https://github.com/nicktasios/opencod
 - Supports regex-based model id filtering and raw provider field equality filtering
 - Can enrich model limits and reasoning metadata from provider-specific endpoints
 - Supports OpenCode `/connect` credentials for custom providers
+- Optionally caches discovered provider models in plugin-owned XDG data files
 
 ## Installation
 
@@ -114,9 +115,34 @@ The plugin injects helper commands into OpenCode's runtime command list.
 
 ### `/models-discovery:config`
 
-Opens an assistant-guided configuration flow using OpenCode's `customize-opencode` skill. Use this when setting up the plugin, adding provider-level discovery config, enabling metadata enrichment, or disabling discovery for a provider.
+Opens an assistant-guided configuration flow using OpenCode's `customize-opencode` skill. Use this when setting up the plugin, adding provider-level discovery config, enabling metadata enrichment, disabling discovery for a provider, or managing a persisted discovery cache and its model overrides.
 
 This command is available whenever the plugin is loaded.
+
+## Persisted Model Discovery Cache
+
+Caching is opt-in per provider. When enabled, the plugin stores the last successful filtered and metadata-enriched discovered model configuration under its own XDG data directory and reuses it until its TTL expires. A fresh cache avoids model-endpoint requests, credential resolution, and enrichment requests. Expired cached models are never used if a refresh fails.
+
+```json
+{
+  "provider": {
+    "local-vllm": {
+      "options": {
+        "baseURL": "http://127.0.0.1:8000/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "cache": {
+            "enabled": true,
+            "ttlSeconds": 86400
+          }
+        }
+      }
+    }
+  }
+}
+```
+
+The cache lives at `${XDG_DATA_HOME}/opencode-models-discovery/providers/provider-<encoded-provider-id>.json`, using `xdg-basedir`'s data-directory fallback when `XDG_DATA_HOME` is unset. It contains only models that passed discovery filters and enrichment eligibility checks, including their resulting OpenCode capability metadata. These files never contain credentials, auth headers, or OpenCode/Mimocode auth data. Saved per-model overrides are managed through `/models-discovery:config`; they are applied only to models present in the latest valid cached model set, and explicit `provider.<id>.models` configuration remains highest priority. See [persisted model discovery cache](docs/persisted-model-discovery.md) for the cache schema, refresh behavior, overrides, and security details.
 
 ### `/models-discovery:migrate`
 
@@ -143,13 +169,12 @@ For models.dev enrichment:
 }
 ```
 
-For LiteLLM-compatible model info endpoints:
+For LiteLLM-compatible model info endpoints, `/v1/model/info` is used by default:
 
 ```json
 {
   "modelsDiscovery": {
     "enabled": true,
-    "modelInfoEndpoint": "/v1/model/info",
     "modelInfoFormat": "litellm"
   }
 }
@@ -193,6 +218,7 @@ This keeps the same provider configuration model while allowing the plugin to wo
 ## Documentation
 
 - Configuration guide: [`docs/configuration.md`](docs/configuration.md)
+- Persisted model discovery cache: [`docs/persisted-model-discovery.md`](docs/persisted-model-discovery.md)
 - `/connect` credentials and auth-backed discovery: [`docs/connect-and-auth.md`](docs/connect-and-auth.md)
 - Community provider examples: [`docs/config_example/`](docs/config_example/)
 - Provider compatibility and detection rules: [`docs/providers.md`](docs/providers.md)

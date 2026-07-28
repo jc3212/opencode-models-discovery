@@ -37,6 +37,7 @@ type HostClient = 'opencode' | 'mimocode'
 
 const RESOLVED_PROVIDERS_TIMEOUT_MS = 250
 const DEFAULT_LITELLM_MODEL_INFO_ENDPOINT = '/v1/model/info'
+const DEFAULT_LMSTUDIO_MODELS_ENDPOINT = '/api/v1/models'
 const defaultProviderModelStore = new ProviderModelStore()
 
 export const providerModelStoreTestUtils = {
@@ -302,6 +303,19 @@ export async function enhanceConfig(
         })
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.VLLM) {
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
+      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LMStudio) {
+        const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
+        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint)
+        if (modelInfoDiscovery.ok) {
+          modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data)
+        } else {
+          logger.warn('Provider model info discovery failed', {
+            provider: providerName,
+            baseURL,
+            endpoint: modelInfoEndpoint,
+            format: modelInfoFormat,
+          })
+        }
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LiteLLM) {
         const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LITELLM_MODEL_INFO_ENDPOINT
         const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint)

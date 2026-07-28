@@ -9,3 +9,4 @@ opencode-debug.log
 coverage/
 opencode.json
 docs/articles/
+.idea/

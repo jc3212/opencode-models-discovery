@@ -1,3 +1,4 @@
+import { createBifrostModelInfoEnricher } from './bifrost'
 import { createLiteLLMModelInfoEnricher } from './litellm'
 import { createModelsDevModelInfoEnricher } from './models-dev'
 import { createVLLMModelInfoEnricher } from './vllm'
@@ -7,6 +8,7 @@ import type { ModelInfoEnricher, ModelInfoEnricherOptions } from './types'
 type ModelInfoEnricherFactory = (data: unknown, options?: ModelInfoEnricherOptions) => ModelInfoEnricher
 
 const MODEL_INFO_ENRICHERS: Partial<Record<ModelInfoFormat, ModelInfoEnricherFactory>> = {
+  [ModelInfoFormat.Bifrost]: createBifrostModelInfoEnricher,
   [ModelInfoFormat.LiteLLM]: createLiteLLMModelInfoEnricher,
   [ModelInfoFormat.ModelsDev]: createModelsDevModelInfoEnricher,
   [ModelInfoFormat.VLLM]: createVLLMModelInfoEnricher,

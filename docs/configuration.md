@@ -176,13 +176,42 @@ Community provider examples live in [`docs/config_example/`](config_example/).
 
 The generic OpenAI-compatible `/v1/models` endpoint only guarantees a small model list shape. Extra metadata such as context limits, tool calling, reasoning, image input, or structured output is provider-specific, so metadata enrichment is opt-in.
 
-The plugin currently supports three model info formats:
+The plugin currently supports four model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
+| `"bifrost"` | Fields in Bifrost's `/v1/models` response | No | Reads Bifrost inline limits, modalities, and base per-token pricing when present |
 | `"litellm"` | Provider-specific model info endpoint | No | Uses `/v1/model/info` by default; set `modelInfoEndpoint` to override it |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
+
+### Bifrost Model Info
+
+Use `modelInfoFormat: "bifrost"` for a Bifrost AI Gateway provider. It reads Bifrost's documented inline metadata from the same `/v1/models` response and does not make another metadata request.
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "bifrost": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Bifrost",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "bifrost"
+        }
+      },
+      "models": {}
+    }
+  }
+}
+```
+
+For each discovered model, the plugin maps Bifrost's reported `context_length`, `max_input_tokens`, and `max_output_tokens` to `limit.context`, `limit.input`, and `limit.output`. It maps `architecture.input_modalities` and `architecture.output_modalities` to `modalities`, and maps `pricing.prompt` and `pricing.completion` to the reported base USD per-token `cost.input` and `cost.output` values. Other pricing fields, scoped pricing overrides, and tiered pricing are not represented by this format.
+
+When `smartModelName: true` is set for the provider, Bifrost's `normalized_name` is used when it is available. Missing or malformed fields are left unset. The normal unpaginated Bifrost `/v1/models` request returns the complete aggregated list; avoid configuring a `page_size` unless you intentionally want a paged subset.
 
 ### LiteLLM Model Info
 

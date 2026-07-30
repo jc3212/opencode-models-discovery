@@ -587,6 +587,50 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockFetch).not.toHaveBeenCalled()
     })
 
+    it('enriches Bifrost inline metadata without another request', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{
+            id: 'bedrock/anthropic.claude-sonnet-4-6',
+            object: 'model',
+            created: 0,
+            owned_by: 'bifrost',
+            normalized_name: 'Claude Sonnet 4.6',
+            context_length: 200000,
+            max_input_tokens: 200000,
+            max_output_tokens: 8192,
+            architecture: { input_modalities: ['text', 'image'], output_modalities: ['text'] },
+            pricing: { prompt: '0.000003', completion: '0.000015' },
+          }],
+        }),
+      })
+
+      const config: any = {
+        provider: {
+          bifrost: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8080/v1',
+              modelsDiscovery: { modelInfoFormat: 'bifrost', smartModelName: true },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(config.provider.bifrost.models['bedrock/anthropic.claude-sonnet-4-6']).toMatchObject({
+        id: 'bedrock/anthropic.claude-sonnet-4-6',
+        name: 'Claude Sonnet 4.6',
+        limit: { context: 200000, input: 200000, output: 8192 },
+        modalities: { input: ['text', 'image'], output: ['text'] },
+        cost: { input: 0.000003, output: 0.000015 },
+      })
+    })
+
     it('does not inject expired inventory after a failed refresh but keeps explicit models', async () => {
       const store = new ProviderModelStore(cacheRoot)
       await store.saveModels({

@@ -180,7 +180,7 @@ For LiteLLM-compatible model info endpoints, `/v1/model/info` is used by default
 }
 ```
 
-For LM Studio's native REST inventory and metadata endpoint:
+For LM Studio 0.4.0+'s native v1 REST inventory endpoint:
 
 ```json
 {

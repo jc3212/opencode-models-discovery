@@ -25,7 +25,8 @@ describe('LM Studio model info enricher', () => {
     enricher!.applyModelInfo(config, 'google/gemma-4')
 
     expect(enricher!.getModelName?.('google/gemma-4')).toBe('Gemma 4')
-    expect(config.limit).toEqual({ context: 16384, output: 16384 })
+    expect(config.limit.context).toEqual(16384)
+    expect(config.limit.output).toBeUndefined()
     expect(config.modalities).toEqual({ input: ['text', 'image'], output: ['text'] })
     expect(config.tool_call).toBe(true)
     expect(config.reasoning).toBe(true)
@@ -45,7 +46,8 @@ describe('LM Studio model info enricher', () => {
     const config: any = { id: 'local/model' }
 
     enricher!.applyModelInfo(config, 'local/model')
-    expect(config.limit).toEqual({ context: 4096, output: 4096 })
+    expect(config.limit.context).toEqual(4096)
+    expect(config.limit.output).toBeUndefined()
     expect(config.modalities).toBeUndefined()
     expect(config.reasoning).toBeUndefined()
     expect(config.tool_call).toBeUndefined()
@@ -61,7 +63,8 @@ describe('LM Studio model info enricher', () => {
 
     enricher!.applyModelInfo(config, 'partial/model')
 
-    expect(config.limit).toEqual({ context: 2048, output: 2048 })
+    expect(config.limit.context).toEqual(2048)
+    expect(config.limit.output).toBeUndefined()
     expect(config.reasoning).toBe(true)
     expect(config.variants).toEqual({ medium: { reasoningEffort: 'medium' } })
   })

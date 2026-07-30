@@ -51,7 +51,7 @@ export function createLMStudioModelInfoEnricher(data: unknown): ModelInfoEnriche
 
       const contextLimit = getLoadedContextLimit(model) ?? (hasUsableNumber(model.max_context_length) ? model.max_context_length : undefined)
       if (contextLimit) {
-        modelConfig.limit = { context: contextLimit, output: contextLimit }
+        modelConfig.limit = { context: contextLimit }
       }
 
       const capabilities = model.capabilities && typeof model.capabilities === 'object'

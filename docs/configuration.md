@@ -39,7 +39,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.enabled` | `boolean` | Force enable or disable discovery for a single provider |
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
 | `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override the LiteLLM model-info endpoint path. Defaults to `/v1/model/info` when `modelInfoFormat` is `"litellm"` |
-| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"`, `"models.dev"`, and `"vllm"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"`, `"models.dev"`, `"vllm"`, and `"lmstudio"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
 | `provider.<name>.options.modelsDiscovery.models.excludeRegex` | `string[]` | Shortcut regex deny-list for discovered model ids only |
@@ -183,7 +183,7 @@ The plugin currently supports four model info formats:
 | `"litellm"` | Provider-specific model info endpoint | No | Uses `/v1/model/info` by default; set `modelInfoEndpoint` to override it |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
-| `"lmstudio"` | LM Studio `/api/v1/models` inventory | No | Uses `/api/v1/models` by default; set `modelInfoEndpoint` for another path |
+| `"lmstudio"` | LM Studio 0.4.0+ `/api/v1/models` inventory | No | Uses `/api/v1/models` by default; set `modelInfoEndpoint` for another path |
 
 ### LiteLLM Model Info
 
@@ -249,7 +249,7 @@ For each discovered model with a positive numeric `max_model_len`, the plugin se
 
 ### LM Studio Model Info
 
-Use `modelInfoFormat: "lmstudio"` to discover models through `/v1/models` and enrich them from `/api/v1/models`. Set `modelInfoEndpoint` only when LM Studio uses another inventory path.
+Use `modelInfoFormat: "lmstudio"` with LM Studio 0.4.0+, which officially released the native v1 REST API and `GET /api/v1/models`, to discover models through `/v1/models` and enrich them from `/api/v1/models`. Set `modelInfoEndpoint` only when LM Studio uses another inventory path.
 
 ```json
 {
@@ -273,7 +273,7 @@ Use `modelInfoFormat: "lmstudio"` to discover models through `/v1/models` and en
 
 Only models returned by `/v1/models` are injected. A model is enriched only when its `id` exactly matches an inventory `key`; inventory-only models are not injected. `modelsDiscovery.endpoint` controls discovery, while `modelsDiscovery.modelInfoEndpoint` controls the inventory request.
 
-When available, the plugin sets context and output limits from the largest loaded instance `config.context_length`; otherwise it uses `max_context_length`. It also maps `capabilities.vision` to image input, `capabilities.trained_for_tool_use` to `tool_call`, and reported reasoning options to `reasoning` plus `low`, `medium`, and `high` variants. Missing or malformed metadata is left unset without preventing discovery.
+When available, the plugin sets `limit.context` from the largest loaded instance `config.context_length`, otherwise it uses `max_context_length`; it does not infer `limit.output`. The plugin maps `capabilities.vision` to image input, `capabilities.trained_for_tool_use` to `tool_call`, and reported reasoning options to `reasoning` plus `low`, `medium`, and `high` variants. Missing or malformed metadata is left unset without preventing discovery.
 
 ### models.dev Metadata
 

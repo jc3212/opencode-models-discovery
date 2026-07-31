@@ -180,6 +180,17 @@ For LiteLLM-compatible model info endpoints, `/v1/model/info` is used by default
 }
 ```
 
+For Bifrost AI Gateway's inline `/v1/models` metadata, without another metadata request:
+
+```json
+{
+  "modelsDiscovery": {
+    "enabled": true,
+    "modelInfoFormat": "bifrost"
+  }
+}
+```
+
 For LM Studio 0.4.0+'s native v1 REST inventory endpoint:
 
 ```json
@@ -191,7 +202,7 @@ For LM Studio 0.4.0+'s native v1 REST inventory endpoint:
 }
 ```
 
-If metadata cannot be fetched or matched safely, discovery still succeeds and the plugin leaves unknown capability fields unset rather than guessing defaults. See [`docs/providers.md`](docs/providers.md#modelsdev-metadata-enrichment) for details.
+If metadata cannot be fetched or matched safely, discovery still succeeds and the plugin leaves unknown capability fields unset rather than guessing defaults. See [model metadata enrichment](docs/configuration.md#model-metadata-enrichment) for format-specific behavior and configuration.
 
 ## Upgrade Note
 

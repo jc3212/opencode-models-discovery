@@ -301,7 +301,7 @@ export async function enhanceConfig(
           provider: providerName,
           count: modelsDevCache.size,
         })
-      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.VLLM) {
+      } else if (!usingPersistedModels && (modelInfoFormat === ModelInfoFormat.Bifrost || modelInfoFormat === ModelInfoFormat.VLLM)) {
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LMStudio) {
         const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
@@ -362,7 +362,7 @@ export async function enhanceConfig(
           const owner = extractModelOwner(model.id)
           const modelConfig: any = {
             id: model.id,
-            name: smartModelNameEnabled ? modelInfoEnricher?.getModelName?.(model.id) ?? formatModelName(model) : model.id,
+            name: smartModelNameEnabled ? modelInfoEnricher?.getModelName?.(model.id, model) ?? formatModelName(model) : model.id,
           }
 
           if (owner) {

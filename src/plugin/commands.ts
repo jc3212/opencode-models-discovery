@@ -118,7 +118,7 @@ Supported plugin options under provider.<id>.options.modelsDiscovery:
 - models.excludeBy: deny-list for top-level raw fields returned in the provider's /v1/models response; each rule uses exactly one of equals or match
 - smartModelName: use friendlier display names for discovered models
 - modelInfoFormat="models.dev": enrich from the public models.dev index without modelInfoEndpoint
-- modelInfoFormat="bifrost": read Bifrost's documented inline /v1/models limits, modalities, and base per-token pricing without another request
+- modelInfoFormat="bifrost": read Bifrost's documented inline /v1/models limits, modalities, and base pricing without another request
 - modelInfoFormat="litellm": enrich from a LiteLLM-compatible /v1/model/info endpoint; modelInfoEndpoint optionally overrides the path
 - modelInfoFormat="vllm": for vLLM-compatible providers whose raw /v1/models entries include a positive numeric max_model_len; without another request, sets limit.context and limit.output for matching discovered models
 - filterNonChat: when LiteLLM model info is available, skip non-chat models by default

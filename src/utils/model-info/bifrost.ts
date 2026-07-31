@@ -20,9 +20,12 @@ function parseNonNegativeNumber(value: unknown): number | undefined {
 function getModalities(value: unknown): string[] | undefined {
   if (!Array.isArray(value)) return undefined
 
-  const modalities = value.filter((modality): modality is string =>
-    typeof modality === 'string' && modality.length > 0
-  )
+  const supportedModalities = new Set(['text', 'audio', 'image', 'video', 'pdf'])
+  const modalities = [...new Set(value
+    .filter((modality): modality is string => typeof modality === 'string')
+    .map((modality) => modality.trim().toLowerCase())
+    .map((modality) => modality === 'speech' ? 'audio' : modality)
+    .filter((modality) => supportedModalities.has(modality)))]
   return modalities.length > 0 ? modalities : undefined
 }
 
@@ -39,11 +42,11 @@ export function createBifrostModelInfoEnricher(_data: unknown): ModelInfoEnriche
       const context = rawModel?.context_length
       const input = rawModel?.max_input_tokens
       const output = rawModel?.max_output_tokens
-      if (hasUsableNumber(context) || hasUsableNumber(input) || hasUsableNumber(output)) {
+      if (hasUsableNumber(context) && hasUsableNumber(output)) {
         modelConfig.limit = {
-          ...(hasUsableNumber(context) ? { context } : {}),
+          context,
           ...(hasUsableNumber(input) ? { input } : {}),
-          ...(hasUsableNumber(output) ? { output } : {}),
+          output,
         }
       }
 
@@ -63,10 +66,10 @@ export function createBifrostModelInfoEnricher(_data: unknown): ModelInfoEnriche
       if (pricing && typeof pricing === 'object' && !Array.isArray(pricing)) {
         const inputCost = parseNonNegativeNumber((pricing as Record<string, unknown>).prompt)
         const outputCost = parseNonNegativeNumber((pricing as Record<string, unknown>).completion)
-        if (inputCost !== undefined || outputCost !== undefined) {
+        if (inputCost !== undefined && outputCost !== undefined) {
           modelConfig.cost = {
-            ...(inputCost !== undefined ? { input: inputCost } : {}),
-            ...(outputCost !== undefined ? { output: outputCost } : {}),
+            input: inputCost * 1_000_000,
+            output: outputCost * 1_000_000,
           }
         }
       }

@@ -600,7 +600,7 @@ describe('ModelDiscovery Plugin', () => {
             context_length: 200000,
             max_input_tokens: 200000,
             max_output_tokens: 8192,
-            architecture: { input_modalities: ['text', 'image'], output_modalities: ['text'] },
+            architecture: { input_modalities: ['TEXT', 'IMAGE', 'SPEECH'], output_modalities: ['TEXT'] },
             pricing: { prompt: '0.000003', completion: '0.000015' },
           }],
         }),
@@ -626,8 +626,8 @@ describe('ModelDiscovery Plugin', () => {
         id: 'bedrock/anthropic.claude-sonnet-4-6',
         name: 'Claude Sonnet 4.6',
         limit: { context: 200000, input: 200000, output: 8192 },
-        modalities: { input: ['text', 'image'], output: ['text'] },
-        cost: { input: 0.000003, output: 0.000015 },
+        modalities: { input: ['text', 'image', 'audio'], output: ['text'] },
+        cost: { input: 3, output: 15 },
       })
     })
 

@@ -180,6 +180,17 @@ For LiteLLM-compatible model info endpoints, `/v1/model/info` is used by default
 }
 ```
 
+For LM Studio 0.4.0+'s native v1 REST inventory endpoint:
+
+```json
+{
+  "modelsDiscovery": {
+    "enabled": true,
+    "modelInfoFormat": "lmstudio"
+  }
+}
+```
+
 If metadata cannot be fetched or matched safely, discovery still succeeds and the plugin leaves unknown capability fields unset rather than guessing defaults. See [`docs/providers.md`](docs/providers.md#modelsdev-metadata-enrichment) for details.
 
 ## Upgrade Note

@@ -33,6 +33,7 @@ export enum ModelInfoFormat {
   LiteLLM = 'litellm',
   ModelsDev = 'models.dev',
   VLLM = 'vllm',
+  LMStudio = 'lmstudio',
 }
 
 export const DEFAULT_CACHE_TTL_SECONDS = 86400

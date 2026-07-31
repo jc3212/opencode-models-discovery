@@ -120,6 +120,7 @@ Supported plugin options under provider.<id>.options.modelsDiscovery:
 - modelInfoFormat="models.dev": enrich from the public models.dev index without modelInfoEndpoint
 - modelInfoFormat="litellm": enrich from a LiteLLM-compatible /v1/model/info endpoint; modelInfoEndpoint optionally overrides the path
 - modelInfoFormat="vllm": for vLLM-compatible providers whose raw /v1/models entries include a positive numeric max_model_len; without another request, sets limit.context and limit.output for matching discovered models
+- modelInfoFormat="lmstudio": discover callable models through the normal /v1/models endpoint, then enrich exact model-id matches from LM Studio's /api/v1/models inventory
 - filterNonChat: when LiteLLM model info is available, skip non-chat models by default
 - cache.enabled: opt in to a provider-scoped persisted discovery cache of filtered and enriched model configurations; defaults to false
 - cache.ttlSeconds: non-negative finite cache lifetime in seconds; defaults to 86400
@@ -142,6 +143,7 @@ Recommended defaults:
 - use modelInfoFormat="models.dev" for models.dev metadata enrichment
 - use modelInfoFormat="litellm" for LiteLLM-compatible /v1/model/info; set modelInfoEndpoint only when the provider uses another path
 - use modelInfoFormat="vllm" only when the provider's /v1/models response exposes max_model_len; it is not a standard OpenAI-compatible field, does not require modelInfoEndpoint, and does not infer other capabilities
+- use modelInfoFormat="lmstudio" for LM Studio REST metadata enrichment; set modelInfoEndpoint only when LM Studio uses another inventory path
 - configure caching only when the user requests it; it is disabled by default
 - the persisted discovery cache belongs to this plugin and is not a replacement for opencode.json
 

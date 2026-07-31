@@ -1,4 +1,5 @@
 import { createLiteLLMModelInfoEnricher } from './litellm'
+import { createLMStudioModelInfoEnricher } from './lmstudio'
 import { createModelsDevModelInfoEnricher } from './models-dev'
 import { createVLLMModelInfoEnricher } from './vllm'
 import { ModelInfoFormat } from '../../types/plugin-config'
@@ -10,6 +11,7 @@ const MODEL_INFO_ENRICHERS: Partial<Record<ModelInfoFormat, ModelInfoEnricherFac
   [ModelInfoFormat.LiteLLM]: createLiteLLMModelInfoEnricher,
   [ModelInfoFormat.ModelsDev]: createModelsDevModelInfoEnricher,
   [ModelInfoFormat.VLLM]: createVLLMModelInfoEnricher,
+  [ModelInfoFormat.LMStudio]: createLMStudioModelInfoEnricher,
 }
 
 export function createModelInfoEnricher(

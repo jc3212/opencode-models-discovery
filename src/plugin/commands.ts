@@ -112,6 +112,7 @@ Explain the mechanism to the user:
 Supported plugin options under provider.<id>.options.modelsDiscovery:
 - enabled: force enable or disable discovery for this provider
 - endpoint: provider-specific models endpoint path; defaults to /v1/models
+- modelInfoEndpoint: override the metadata endpoint for "litellm" or "lmstudio"; their defaults are /v1/model/info and /api/v1/models
 - models.includeRegex: shortcut for model id regex allow-list; prefer models.includeBy with field="id" and match for new config
 - models.excludeRegex: shortcut for model id regex deny-list; prefer models.excludeBy with field="id" and match for new config
 - models.includeBy: allow-list for top-level raw fields returned in the provider's /v1/models response; each rule uses exactly one of equals or match

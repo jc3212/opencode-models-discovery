@@ -257,6 +257,7 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('Use the customize-opencode skill.')
         expect(config.command['models-discovery:config'].template).toContain('provider.<id>.options.modelsDiscovery')
         expect(config.command['models-discovery:config'].template).toContain('endpoint')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoEndpoint')
         expect(config.command['models-discovery:config'].template).toContain('filterNonChat')
         expect(config.command['models-discovery:config'].template).toContain('enabled_providers and disabled_providers')
         expect(config.command['models-discovery:config'].template).toContain('OpenCode /connect credentials')
@@ -266,8 +267,10 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('includeBy')
         expect(config.command['models-discovery:config'].template).toContain('excludeBy')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="models.dev"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="bifrost"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="litellm"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="vllm"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="lmstudio"')
         expect(config.command['models-discovery:config'].template).toContain('max_model_len')
         expect(config.command['models-discovery:config'].template).toContain('restart opencode')
 

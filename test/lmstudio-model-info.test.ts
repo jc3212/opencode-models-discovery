@@ -26,7 +26,7 @@ describe('LM Studio model info enricher', () => {
 
     expect(enricher!.getModelName?.('google/gemma-4')).toBe('Gemma 4')
     expect(config.limit.context).toEqual(16384)
-    expect(config.limit.output).toBeUndefined()
+    expect(config.limit.output).toEqual(0)
     expect(config.modalities).toEqual({ input: ['text', 'image'], output: ['text'] })
     expect(config.tool_call).toBe(true)
     expect(config.reasoning).toBe(true)
@@ -36,7 +36,7 @@ describe('LM Studio model info enricher', () => {
     })
   })
 
-  it('falls back to max context length and leaves missing metadata unset', () => {
+  it('falls back to max context length and uses zero for an unknown output limit', () => {
     const enricher = createModelInfoEnricher(ModelInfoFormat.LMStudio, { models: [{
       type: 'llm',
       key: 'local/model',
@@ -47,7 +47,7 @@ describe('LM Studio model info enricher', () => {
 
     enricher!.applyModelInfo(config, 'local/model')
     expect(config.limit.context).toEqual(4096)
-    expect(config.limit.output).toBeUndefined()
+    expect(config.limit.output).toEqual(0)
     expect(config.modalities).toBeUndefined()
     expect(config.reasoning).toBeUndefined()
     expect(config.tool_call).toBeUndefined()
@@ -64,7 +64,7 @@ describe('LM Studio model info enricher', () => {
     enricher!.applyModelInfo(config, 'partial/model')
 
     expect(config.limit.context).toEqual(2048)
-    expect(config.limit.output).toBeUndefined()
+    expect(config.limit.output).toEqual(0)
     expect(config.reasoning).toBe(true)
     expect(config.variants).toEqual({ medium: { reasoningEffort: 'medium' } })
   })

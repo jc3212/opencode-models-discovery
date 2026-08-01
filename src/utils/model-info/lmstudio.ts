@@ -51,7 +51,8 @@ export function createLMStudioModelInfoEnricher(data: unknown): ModelInfoEnriche
 
       const contextLimit = getLoadedContextLimit(model) ?? (hasUsableNumber(model.max_context_length) ? model.max_context_length : undefined)
       if (contextLimit) {
-        modelConfig.limit = { context: contextLimit }
+        // OpenCode requires both fields when a limit object is present. Zero preserves its output-token fallback.
+        modelConfig.limit = { context: contextLimit, output: 0 }
       }
 
       const capabilities = model.capabilities && typeof model.capabilities === 'object'

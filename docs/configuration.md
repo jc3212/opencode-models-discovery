@@ -302,7 +302,7 @@ Use `modelInfoFormat: "lmstudio"` with LM Studio 0.4.0+, which officially releas
 
 Only models returned by `/v1/models` are injected. A model is enriched only when its `id` exactly matches an inventory `key`; inventory-only models are not injected. `modelsDiscovery.endpoint` controls discovery, while `modelsDiscovery.modelInfoEndpoint` controls the inventory request.
 
-When available, the plugin sets `limit.context` from the largest loaded instance `config.context_length`, otherwise it uses `max_context_length`; it does not infer `limit.output`. The plugin maps `capabilities.vision` to image input, `capabilities.trained_for_tool_use` to `tool_call`, and reported reasoning options to `reasoning` plus `low`, `medium`, and `high` variants. Missing or malformed metadata is left unset without preventing discovery.
+When available, the plugin sets `limit.context` from the largest loaded instance `config.context_length`, otherwise it uses `max_context_length`. LM Studio does not report a distinct output limit, so the plugin writes `limit.output: 0`: this satisfies OpenCode's requirement that a limit object include both context and output while preserving OpenCode's default or configured output-token fallback. The plugin maps `capabilities.vision` to image input, `capabilities.trained_for_tool_use` to `tool_call`, and reported reasoning options to `reasoning` plus `low`, `medium`, and `high` variants. Missing or malformed metadata is left unset without preventing discovery.
 
 ### models.dev Metadata
 

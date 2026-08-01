@@ -2353,7 +2353,7 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:1234/api/v1/models', expect.any(Object))
       expect(config.provider.lmstudio.models['qwen/qwen3']).toMatchObject({
         id: 'qwen/qwen3',
-        limit: { context: 8192 },
+        limit: { context: 8192, output: 0 },
         tool_call: true,
       })
     })
@@ -2425,7 +2425,7 @@ describe('ModelDiscovery Plugin', () => {
       await pluginHooks.config(cachedConfig)
 
       expect(mockFetch).not.toHaveBeenCalled()
-      expect(cachedConfig.provider.lmstudio.models['qwen/qwen3'].limit).toEqual({ context: 8192 })
+      expect(cachedConfig.provider.lmstudio.models['qwen/qwen3'].limit).toEqual({ context: 8192, output: 0 })
     })
 
     it('should reject field filters that specify both equals and match', async () => {

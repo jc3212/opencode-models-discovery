@@ -38,8 +38,8 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 |--------|------|-------------|
 | `provider.<name>.options.modelsDiscovery.enabled` | `boolean` | Force enable or disable discovery for a single provider |
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
-| `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override the LiteLLM model-info endpoint path. Defaults to `/v1/model/info` when `modelInfoFormat` is `"litellm"` |
-| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"litellm"`, `"models.dev"`, and `"vllm"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override a format-specific metadata endpoint. Defaults to `/v1/model/info` for `"litellm"` and `/api/v1/models` for `"lmstudio"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"bifrost"`, `"litellm"`, `"models.dev"`, `"vllm"`, and `"lmstudio"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
 | `provider.<name>.options.modelsDiscovery.models.excludeRegex` | `string[]` | Shortcut regex deny-list for discovered model ids only |
@@ -176,13 +176,43 @@ Community provider examples live in [`docs/config_example/`](config_example/).
 
 The generic OpenAI-compatible `/v1/models` endpoint only guarantees a small model list shape. Extra metadata such as context limits, tool calling, reasoning, image input, or structured output is provider-specific, so metadata enrichment is opt-in.
 
-The plugin currently supports three model info formats:
+The plugin currently supports five model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
+| `"bifrost"` | Fields in Bifrost's `/v1/models` response | No | Reads Bifrost inline limits, modalities, and base pricing when present |
 | `"litellm"` | Provider-specific model info endpoint | No | Uses `/v1/model/info` by default; set `modelInfoEndpoint` to override it |
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
+| `"lmstudio"` | LM Studio 0.4.0+ `/api/v1/models` inventory | No | Uses `/api/v1/models` by default; set `modelInfoEndpoint` for another path |
+
+### Bifrost Model Info
+
+Use `modelInfoFormat: "bifrost"` for a Bifrost AI Gateway provider. It reads Bifrost's documented inline metadata from the same `/v1/models` response and does not make another metadata request.
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "bifrost": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Bifrost",
+      "options": {
+        "baseURL": "http://127.0.0.1:8080/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "bifrost"
+        }
+      },
+      "models": {}
+    }
+  }
+}
+```
+
+For each discovered model, the plugin maps Bifrost's reported `context_length`, `max_input_tokens`, and `max_output_tokens` to `limit.context`, `limit.input`, and `limit.output`. Limits are added only when both the context and output limits are available, as OpenCode requires both. It maps `architecture.input_modalities` and `architecture.output_modalities` to lower-case OpenCode modalities, translating Bifrost's `SPEECH` value to `audio` and ignoring unsupported values. Bifrost's `pricing.prompt` and `pricing.completion` are USD per-token rates; the plugin converts them to OpenCode's USD per-million-token `cost.input` and `cost.output` values. Costs are added only when both rates are available. Other pricing fields, scoped pricing overrides, and tiered pricing are not represented by this format.
+
+When `smartModelName: true` is set for the provider, Bifrost's `normalized_name` is used when it is available. Missing or malformed fields are left unset. The normal unpaginated Bifrost `/v1/models` request returns the complete aggregated list; avoid configuring a `page_size` unless you intentionally want a paged subset.
 
 ### LiteLLM Model Info
 
@@ -245,6 +275,34 @@ Use `modelInfoFormat: "vllm"` for a vLLM-compatible provider whose `/v1/models` 
 For each discovered model with a positive numeric `max_model_len`, the plugin sets `limit.context` and `limit.output` to that value. `max_model_len` represents the total request sequence length shared by prompt and generated tokens; it is not used as an independent input limit.
 
 `max_model_len` is not part of the standard OpenAI-compatible `/v1/models` response. If a vLLM deployment or proxy does not expose it, discovery still succeeds but no limit is added. This format does not infer reasoning, tool-calling, modalities, or other capabilities.
+
+### LM Studio Model Info
+
+Use `modelInfoFormat: "lmstudio"` with LM Studio 0.4.0+, which officially released the native v1 REST API and `GET /api/v1/models`, to discover models through `/v1/models` and enrich them from `/api/v1/models`. Set `modelInfoEndpoint` only when LM Studio uses another inventory path.
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "lmstudio": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "LM Studio",
+      "options": {
+        "baseURL": "http://127.0.0.1:1234/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "lmstudio"
+        }
+      },
+      "models": {}
+    }
+  }
+}
+```
+
+Only models returned by `/v1/models` are injected. A model is enriched only when its `id` exactly matches an inventory `key`; inventory-only models are not injected. `modelsDiscovery.endpoint` controls discovery, while `modelsDiscovery.modelInfoEndpoint` controls the inventory request.
+
+When available, the plugin sets `limit.context` from the largest loaded instance `config.context_length`, otherwise it uses `max_context_length`. LM Studio does not report a distinct output limit, so the plugin writes `limit.output: 0`: this satisfies OpenCode's requirement that a limit object include both context and output while preserving OpenCode's default or configured output-token fallback. The plugin maps `capabilities.vision` to image input, `capabilities.trained_for_tool_use` to `tool_call`, and reported reasoning options to `reasoning` plus `low`, `medium`, and `high` variants. Missing or malformed metadata is left unset without preventing discovery.
 
 ### models.dev Metadata
 

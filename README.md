@@ -180,7 +180,29 @@ For LiteLLM-compatible model info endpoints, `/v1/model/info` is used by default
 }
 ```
 
-If metadata cannot be fetched or matched safely, discovery still succeeds and the plugin leaves unknown capability fields unset rather than guessing defaults. See [`docs/providers.md`](docs/providers.md#modelsdev-metadata-enrichment) for details.
+For Bifrost AI Gateway's inline `/v1/models` metadata, without another metadata request:
+
+```json
+{
+  "modelsDiscovery": {
+    "enabled": true,
+    "modelInfoFormat": "bifrost"
+  }
+}
+```
+
+For LM Studio 0.4.0+'s native v1 REST inventory endpoint:
+
+```json
+{
+  "modelsDiscovery": {
+    "enabled": true,
+    "modelInfoFormat": "lmstudio"
+  }
+}
+```
+
+If metadata cannot be fetched or matched safely, discovery still succeeds and the plugin leaves unknown capability fields unset rather than guessing defaults. See [model metadata enrichment](docs/configuration.md#model-metadata-enrichment) for format-specific behavior and configuration.
 
 ## Upgrade Note
 
@@ -240,12 +262,12 @@ If structured logging is unavailable in the runtime, the plugin falls back to pr
 
 ## Star History
 
-<a href="https://www.star-history.com/?repos=yuhp%2Fopencode-models-discovery&type=date&legend=top-left">
- <picture>
-   <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/chart?repos=yuhp/opencode-models-discovery&type=date&theme=dark&legend=top-left&sealed_token=IlgLYfsCltctmfkHUHQf5GbFEVgyZet_owagegmj6zVS9X0LXrmtfvKikqjjFTEcEtukeVU8fCYk4FVjUYCmQGfUETaQ3ViAjr_advQF85YPkn0vX07fjo59aCAjHBrSg36BvsNh8avHnSjeT0f4s8vq8ec5fiBVsTpMMjQO2FYgr0Yb4oqX8lg6bIFn" />
-   <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/chart?repos=yuhp/opencode-models-discovery&type=date&legend=top-left&sealed_token=IlgLYfsCltctmfkHUHQf5GbFEVgyZet_owagegmj6zVS9X0LXrmtfvKikqjjFTEcEtukeVU8fCYk4FVjUYCmQGfUETaQ3ViAjr_advQF85YPkn0vX07fjo59aCAjHBrSg36BvsNh8avHnSjeT0f4s8vq8ec5fiBVsTpMMjQO2FYgr0Yb4oqX8lg6bIFn" />
-   <img alt="Star History Chart" src="https://api.star-history.com/chart?repos=yuhp/opencode-models-discovery&type=date&legend=top-left&sealed_token=IlgLYfsCltctmfkHUHQf5GbFEVgyZet_owagegmj6zVS9X0LXrmtfvKikqjjFTEcEtukeVU8fCYk4FVjUYCmQGfUETaQ3ViAjr_advQF85YPkn0vX07fjo59aCAjHBrSg36BvsNh8avHnSjeT0f4s8vq8ec5fiBVsTpMMjQO2FYgr0Yb4oqX8lg6bIFn" />
- </picture>
+<a href="https://sh.yuhp.dev/star-history/opencode-models-discovery">
+  <picture>
+    <source media="(prefers-color-scheme: dark)" srcset="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=light" />
+    <img alt="Star History Chart" src="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=light" />
+  </picture>
 </a>
 
 ## Contributing

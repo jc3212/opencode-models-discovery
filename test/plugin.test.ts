@@ -257,6 +257,7 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('Use the customize-opencode skill.')
         expect(config.command['models-discovery:config'].template).toContain('provider.<id>.options.modelsDiscovery')
         expect(config.command['models-discovery:config'].template).toContain('endpoint')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoEndpoint')
         expect(config.command['models-discovery:config'].template).toContain('filterNonChat')
         expect(config.command['models-discovery:config'].template).toContain('enabled_providers and disabled_providers')
         expect(config.command['models-discovery:config'].template).toContain('OpenCode /connect credentials')
@@ -266,8 +267,10 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('includeBy')
         expect(config.command['models-discovery:config'].template).toContain('excludeBy')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="models.dev"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="bifrost"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="litellm"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="vllm"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="lmstudio"')
         expect(config.command['models-discovery:config'].template).toContain('max_model_len')
         expect(config.command['models-discovery:config'].template).toContain('restart opencode')
 
@@ -585,6 +588,50 @@ describe('ModelDiscovery Plugin', () => {
 
       expect(secondConfig.provider.cached.models['chat-model'].limit).toEqual({ context: 32768, output: 32768 })
       expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('enriches Bifrost inline metadata without another request', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{
+            id: 'bedrock/anthropic.claude-sonnet-4-6',
+            object: 'model',
+            created: 0,
+            owned_by: 'bifrost',
+            normalized_name: 'Claude Sonnet 4.6',
+            context_length: 200000,
+            max_input_tokens: 200000,
+            max_output_tokens: 8192,
+            architecture: { input_modalities: ['TEXT', 'IMAGE', 'SPEECH'], output_modalities: ['TEXT'] },
+            pricing: { prompt: '0.000003', completion: '0.000015' },
+          }],
+        }),
+      })
+
+      const config: any = {
+        provider: {
+          bifrost: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8080/v1',
+              modelsDiscovery: { modelInfoFormat: 'bifrost', smartModelName: true },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(config.provider.bifrost.models['bedrock/anthropic.claude-sonnet-4-6']).toMatchObject({
+        id: 'bedrock/anthropic.claude-sonnet-4-6',
+        name: 'Claude Sonnet 4.6',
+        limit: { context: 200000, input: 200000, output: 8192 },
+        modalities: { input: ['text', 'image', 'audio'], output: ['text'] },
+        cost: { input: 3, output: 15 },
+      })
     })
 
     it('does not inject expired inventory after a failed refresh but keeps explicit models', async () => {
@@ -2264,6 +2311,121 @@ describe('ModelDiscovery Plugin', () => {
       expect(config.provider.gateway.models['deepseek-reasoner']).toBeDefined()
       expect(config.provider.gateway.models['deepseek-embedding']).toBeUndefined()
       expect(config.provider.gateway.models['qwen-chat']).toBeUndefined()
+    })
+
+    it('enriches OpenAI-discovered models from the LM Studio inventory endpoint', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (url.endsWith('/api/v1/models')) {
+          return {
+            ok: true,
+            json: async () => ({
+              models: [{
+                type: 'llm',
+                key: 'qwen/qwen3',
+                display_name: 'Qwen 3',
+                loaded_instances: [{ config: { context_length: 8192 } }],
+                capabilities: { trained_for_tool_use: true },
+              }],
+            }),
+          }
+        }
+        if (url.endsWith('/v1/models')) {
+          return { ok: true, json: async () => ({ data: [{ id: 'qwen/qwen3', object: 'model', created: 0, owned_by: 'lmstudio' }] }) }
+        }
+        return { ok: false }
+      })
+      const config: any = {
+        provider: {
+          lmstudio: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:1234/v1',
+              modelsDiscovery: { modelInfoFormat: 'lmstudio' },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:1234/v1/models', expect.any(Object))
+      expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:1234/api/v1/models', expect.any(Object))
+      expect(config.provider.lmstudio.models['qwen/qwen3']).toMatchObject({
+        id: 'qwen/qwen3',
+        limit: { context: 8192, output: 0 },
+        tool_call: true,
+      })
+    })
+
+    it('keeps generic discovery when LM Studio metadata discovery fails', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (url.endsWith('/v1/models')) {
+          return { ok: true, json: async () => ({ data: [{ id: 'generic-model', object: 'model', created: 0, owned_by: 'lmstudio' }] }) }
+        }
+        return { ok: false }
+      })
+      const config: any = {
+        provider: {
+          lmstudio: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:1234/v1',
+              modelsDiscovery: { modelInfoFormat: 'lmstudio' },
+            },
+            models: { explicit: { id: 'explicit', name: 'Explicit model' } },
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(mockFetch).toHaveBeenCalledWith('http://127.0.0.1:1234/api/v1/models', expect.any(Object))
+      expect(config.provider.lmstudio.models).toEqual(expect.objectContaining({
+        explicit: { id: 'explicit', name: 'Explicit model' },
+        'generic-model': expect.objectContaining({ id: 'generic-model' }),
+      }))
+      expect(config.provider.lmstudio.models['generic-model'].limit).toBeUndefined()
+    })
+
+    it('reuses enriched LM Studio models from a fresh cache without requests', async () => {
+      mockFetch.mockImplementation(async (url: string) => {
+        if (url.endsWith('/api/v1/models')) {
+          return { ok: true, json: async () => ({ models: [{ key: 'qwen/qwen3', loaded_instances: [{ config: { context_length: 8192 } }] }] }) }
+        }
+        if (url.endsWith('/v1/models')) {
+          return { ok: true, json: async () => ({ data: [{ id: 'qwen/qwen3', object: 'model', created: 0, owned_by: 'lmstudio' }] }) }
+        }
+        return { ok: false }
+      })
+      const config: any = {
+        provider: {
+          lmstudio: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:1234/v1',
+              modelsDiscovery: { modelInfoFormat: 'lmstudio', cache: { enabled: true, ttlSeconds: 60 } },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+      mockFetch.mockClear()
+      const cachedConfig: any = {
+        provider: {
+          lmstudio: {
+            ...config.provider.lmstudio,
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(cachedConfig)
+
+      expect(mockFetch).not.toHaveBeenCalled()
+      expect(cachedConfig.provider.lmstudio.models['qwen/qwen3'].limit).toEqual({ context: 8192, output: 0 })
     })
 
     it('should reject field filters that specify both equals and match', async () => {

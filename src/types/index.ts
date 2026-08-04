@@ -50,5 +50,24 @@ export interface ModelLoadingState {
   error?: string
 }
 
-export type LMStudioModel = OpenAIModel
-export type LMStudioModelsResponse = OpenAIModelsResponse
+export interface LMStudioLoadedInstance {
+  config?: {
+    context_length?: number
+  }
+}
+
+export interface LMStudioCapabilities {
+  vision?: boolean
+  trained_for_tool_use?: boolean
+  reasoning?: {
+    allowed_options?: string[]
+  }
+}
+
+export interface LMStudioInventoryModel {
+  key?: string
+  display_name?: string
+  loaded_instances?: LMStudioLoadedInstance[]
+  max_context_length?: number
+  capabilities?: LMStudioCapabilities
+}

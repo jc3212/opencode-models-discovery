@@ -30,9 +30,11 @@ export type ModelFieldFilter = ModelFieldEqualsFilter | ModelFieldMatchFilter
 export type CompiledModelFieldFilter = ModelFieldEqualsFilter | (Omit<ModelFieldMatchFilter, 'match'> & { match: RegExp })
 
 export enum ModelInfoFormat {
+  Bifrost = 'bifrost',
   LiteLLM = 'litellm',
   ModelsDev = 'models.dev',
   VLLM = 'vllm',
+  LMStudio = 'lmstudio',
 }
 
 export const DEFAULT_CACHE_TTL_SECONDS = 86400

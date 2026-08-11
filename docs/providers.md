@@ -134,6 +134,30 @@ A provider is considered discoverable if it matches any detection signal above, 
 }
 ```
 
+### Slow Provider Discovery
+
+For a local server or gateway that needs longer to respond, set `modelsDiscovery.timeoutMs` on that provider:
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "slow-gateway": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "Slow Gateway",
+      "options": {
+        "baseURL": "https://gateway.example.com/v1",
+        "modelsDiscovery": {
+          "timeoutMs": 15000
+        }
+      }
+    }
+  }
+}
+```
+
+Each request to this provider's discovery or provider-specific metadata endpoint can take up to `15000` milliseconds. The plugin also raises its startup discovery wait budget from the default `5000` milliseconds to the largest configured provider timeout.
+
 ### models.dev Metadata Enrichment
 
 Providers that expose only a minimal OpenAI-compatible `/v1/models` response can opt into metadata enrichment from models.dev:

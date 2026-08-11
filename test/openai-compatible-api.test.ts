@@ -27,6 +27,7 @@ describe('OpenAI-compatible API discovery', () => {
   it('returns discovered models from the low-level http client', async () => {
     await withServer((req, res) => {
       expect(req.url).toBe('/v1/models')
+      expect(req.headers['user-agent']).toBe('opencode-models-discovery')
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({
         data: [
@@ -82,6 +83,19 @@ describe('OpenAI-compatible API discovery', () => {
       }, 3500)
     }, async (baseURL) => {
       const result = await discoverModelsFromProvider(baseURL)
+
+      expect(result).toEqual({ ok: false, models: [] })
+    })
+  })
+
+  it('uses a caller-provided request timeout', async () => {
+    await withServer((_req, res) => {
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ data: [] }))
+      }, 50)
+    }, async (baseURL) => {
+      const result = await discoverModelsFromProvider(baseURL, undefined, '/v1/models', 10)
 
       expect(result).toEqual({ ok: false, models: [] })
     })

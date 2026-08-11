@@ -70,7 +70,7 @@ function requestJson<T>(urlStr: string, headers: Record<string, string>, timeout
 
 export async function discoverModelsFromProvider(
   baseURL: string,
-  apiKey: string | undefined,
+  apiKey?: string,
   endpoint: string = OPENAI_COMPATIBLE_MODELS_ENDPOINT,
   timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
 ): Promise<ModelsDiscoveryResult> {
@@ -88,7 +88,7 @@ export async function discoverModelsFromProvider(
 
 export async function discoverModelInfoFromProvider(
   baseURL: string,
-  apiKey: string | undefined,
+  apiKey?: string,
   endpoint: string = "/v1/model/info",
   timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
 ): Promise<ModelInfoDiscoveryResult> {

@@ -56,6 +56,22 @@ Add the plugin to your `opencode.json`:
 
 On startup, the plugin will query the provider's models endpoint and merge discovered models into the active OpenCode config.
 
+### Slow Providers
+
+Discovery requests time out after `3000` milliseconds by default. For a slow local server or gateway, set a larger timeout for that provider:
+
+```json
+{
+  "modelsDiscovery": {
+    "timeoutMs": 15000
+  }
+}
+```
+
+The setting applies to that provider's models endpoint and provider-specific metadata endpoint. OpenCode normally waits up to `5000` milliseconds for discovery during startup; when a provider configures a larger `timeoutMs`, the plugin raises that wait budget to the largest configured provider timeout so its discovered models can be injected before startup continues.
+
+See the [configuration guide](docs/configuration.md#provider-level-configuration) for the full provider configuration.
+
 ## v1.0 Configuration Boundary
 
 Version `1.0.0` uses provider-level discovery configuration only. Put discovery settings under `provider.<id>.options.modelsDiscovery`.

@@ -87,6 +87,19 @@ describe('OpenAI-compatible API discovery', () => {
     })
   })
 
+  it('uses a caller-provided request timeout', async () => {
+    await withServer((_req, res) => {
+      setTimeout(() => {
+        res.writeHead(200, { 'Content-Type': 'application/json' })
+        res.end(JSON.stringify({ data: [] }))
+      }, 50)
+    }, async (baseURL) => {
+      const result = await discoverModelsFromProvider(baseURL, undefined, '/v1/models', 10)
+
+      expect(result).toEqual({ ok: false, models: [] })
+    })
+  })
+
   it('returns ok false for transport errors', async () => {
     const result = await discoverModelsFromProvider('http://127.0.0.1:1')
 

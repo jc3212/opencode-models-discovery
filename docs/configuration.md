@@ -38,7 +38,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 |--------|------|-------------|
 | `provider.<name>.options.modelsDiscovery.enabled` | `boolean` | Force enable or disable discovery for a single provider |
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
-| `provider.<name>.options.modelsDiscovery.timeoutMs` | `number` | Request timeout in milliseconds for API calls. Defaults to `3000` |
+| `provider.<name>.options.modelsDiscovery.timeoutMs` | positive finite `number` | Per-request timeout for the provider's models and provider-specific metadata endpoints. Defaults to `3000` |
 | `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override a format-specific metadata endpoint. Defaults to `/v1/model/info` for `"litellm"` and `/api/v1/models` for `"lmstudio"` |
 | `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"bifrost"`, `"litellm"`, `"models.dev"`, `"vllm"`, and `"lmstudio"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
@@ -58,6 +58,29 @@ Recommended approach:
 4. Use OpenCode `/connect` credentials or `provider.<name>.options.apiKey` for secrets; do not duplicate API keys unless needed.
 
 If `provider.<name>.options.modelsDiscovery.endpoint` is omitted, the plugin uses `/v1/models`.
+
+The config hook waits up to `5000` milliseconds for discovery by default. When one or more providers set `modelsDiscovery.timeoutMs` above that value, the hook uses the largest configured provider timeout instead. This gives a slow provider enough time to inject its discovered models before OpenCode continues startup.
+
+For a provider whose models or provider-specific metadata endpoint needs more than the default `3000` milliseconds, configure a larger timeout on that provider:
+
+```json
+{
+  "provider": {
+    "slow-gateway": {
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://gateway.example.com/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "timeoutMs": 15000
+        }
+      }
+    }
+  }
+}
+```
+
+This allows up to `15000` milliseconds for each discovery request to `slow-gateway` and raises the config hook wait budget to the same value. Other providers keep their own request timeouts.
 
 ## Persisted Model Discovery Cache
 

@@ -4,6 +4,7 @@ import type { OpenAIModel, OpenAIModelsResponse } from '../types'
 
 const OPENAI_COMPATIBLE_MODELS_ENDPOINT = "/v1/models"
 export const DEFAULT_REQUEST_TIMEOUT_MS = 3000
+const REQUEST_USER_AGENT = 'opencode-models-discovery'
 
 export interface ModelsDiscoveryResult {
   ok: boolean
@@ -41,7 +42,10 @@ function requestJson<T>(urlStr: string, headers: Record<string, string>, timeout
     const urlObj = new URL(urlStr)
     const mod = urlObj.protocol === 'https:' ? https : http
 
-    const req = mod.get(urlObj, { headers, timeout: timeoutMs }, (res) => {
+    const req = mod.get(urlObj, {
+      headers: { 'User-Agent': REQUEST_USER_AGENT, ...headers },
+      timeout: timeoutMs,
+    }, (res) => {
       let data = ''
       res.setEncoding('utf8')
       res.on('data', (chunk: string) => data += chunk)

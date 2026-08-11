@@ -27,6 +27,7 @@ describe('OpenAI-compatible API discovery', () => {
   it('returns discovered models from the low-level http client', async () => {
     await withServer((req, res) => {
       expect(req.url).toBe('/v1/models')
+      expect(req.headers['user-agent']).toBe('opencode-models-discovery')
       res.writeHead(200, { 'Content-Type': 'application/json' })
       res.end(JSON.stringify({
         data: [

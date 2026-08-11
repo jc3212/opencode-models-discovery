@@ -8,6 +8,19 @@ import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
 import type { PluginConfig } from '../types/plugin-config'
 
+export const DEFAULT_CONFIG_HOOK_TIMEOUT_MS = 5000
+
+export function getConfigHookTimeoutMs(config: any, logger: PluginLogger): number {
+  const providerTimeouts = Object.values(config?.provider ?? {})
+    .map((provider: any) => provider?.options?.modelsDiscovery?.timeoutMs)
+    .filter((timeoutMs): timeoutMs is number => typeof timeoutMs === 'number' && Number.isFinite(timeoutMs) && timeoutMs > 0)
+  const providerTimeoutMs = providerTimeouts.length > 0 ? Math.max(...providerTimeouts) : undefined
+  const timeoutMs = Math.max(DEFAULT_CONFIG_HOOK_TIMEOUT_MS, providerTimeoutMs ?? 0)
+
+  logger.debug('Using config hook timeout', { timeoutMs, providerTimeoutMs })
+  return timeoutMs
+}
+
 export function createConfigHook(
   client: PluginInput['client'],
   toastNotifier: ToastNotifier,
@@ -46,7 +59,7 @@ export function createConfigHook(
       pluginConfig,
       logger.child({ category: 'discovery' })
     )
-    const timeoutMs = 5000
+    const timeoutMs = getConfigHookTimeoutMs(config, logger)
 
     try {
       await Promise.race([

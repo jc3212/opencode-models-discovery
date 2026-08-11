@@ -48,6 +48,38 @@ describe('JSON config struct parsing', () => {
     ]))
   })
 
+  it.each([0, -1, Number.NaN, Number.POSITIVE_INFINITY, '3000'])('rejects invalid provider timeoutMs values', (timeoutMs) => {
+    const validation = validateConfig({
+      provider: {
+        local: {
+          npm: '@ai-sdk/openai-compatible',
+          options: {
+            baseURL: 'http://127.0.0.1:8000/v1',
+            modelsDiscovery: { timeoutMs },
+          },
+        },
+      },
+    })
+
+    expect(validation.errors).toContain("Provider 'local' modelsDiscovery.timeoutMs must be a positive finite number")
+  })
+
+  it('accepts a positive finite provider timeoutMs', () => {
+    const validation = validateConfig({
+      provider: {
+        local: {
+          npm: '@ai-sdk/openai-compatible',
+          options: {
+            baseURL: 'http://127.0.0.1:8000/v1',
+            modelsDiscovery: { timeoutMs: 15000 },
+          },
+        },
+      },
+    })
+
+    expect(validation.isValid).toBe(true)
+  })
+
   it('handles a full provider discovery config from JSON', () => {
     const json = `{
       "enabled": true,

@@ -33,6 +33,7 @@ export function validateConfig(config: any): ValidationResult {
 
       if (discoveryConfig && typeof discoveryConfig === 'object') {
         warnMisplacedModelFieldFilters(providerName, discoveryConfig, warnings)
+        validateTimeoutMs(providerName, discoveryConfig.timeoutMs, errors)
         validateCache(providerName, discoveryConfig.cache, errors)
       }
     }
@@ -42,6 +43,16 @@ export function validateConfig(config: any): ValidationResult {
     isValid: errors.length === 0,
     errors,
     warnings
+  }
+}
+
+function validateTimeoutMs(providerName: string, value: unknown, errors: string[]): void {
+  if (value === undefined) {
+    return
+  }
+
+  if (typeof value !== 'number' || !Number.isFinite(value) || value <= 0) {
+    errors.push(`Provider '${providerName}' modelsDiscovery.timeoutMs must be a positive finite number`)
   }
 }
 

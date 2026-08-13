@@ -107,9 +107,51 @@ A fresh cached model set is injected without requesting the provider models endp
 
 Each cache file contains a version, provider id, normalized base URL, endpoint, fetch time, and the final discovered model configurations, including enriched OpenCode capability metadata. Models rejected by filters, categorization, or metadata enrichment eligibility are not cached. It never contains API keys, authorization headers, credentials, or raw model-info endpoint responses. A cache file with another provider identity or an unsupported schema version is treated as a cache miss.
 
-Saved per-model overrides are separate from plugin-generated cached model configurations and are managed through `/models-discovery:config`. Overrides merge recursively for objects, replace arrays, cannot change `id`, and apply only when the model is present in the current valid discovered model set. Explicit `provider.<name>.models` configuration is applied last and remains higher priority. An override for a model absent from a refreshed model set stays saved but inactive until that model returns.
+Saved per-model overrides are separate from plugin-generated cached model configurations and are managed through `/models-discovery:config`. Overrides merge recursively for objects, replace arrays, cannot change `id`, and apply only when the model is present in the current valid discovered model set. An override for a model absent from a refreshed model set stays saved but inactive until that model returns.
 
 See [Persisted Model Discovery Cache](persisted-model-discovery.md) for the complete cache schema, lifecycle, override behavior, and security boundary.
+
+## Model Assembly And Customization
+
+For each eligible provider, the plugin produces its final `provider.<name>.models` map in this order:
+
+1. Obtain the discovered model set from a fresh provider request or a valid persisted cache entry.
+2. For a live request, apply model filters, build OpenCode model configuration, and apply the optional `modelInfoFormat` enrichment.
+3. Apply saved plugin-managed per-model overrides when present.
+4. Apply matching explicit `provider.<name>.models.<model-id>` configuration from `opencode.json`.
+5. Preserve explicit model entries whose ids were not discovered as standalone models.
+
+For a matching model id, the discovered or cached configuration is the base and explicit configuration is a recursive override. Nested objects merge, while arrays and scalar values replace the existing value. The discovered model id remains authoritative, so an explicit `id` value cannot rename it.
+
+```json
+{
+  "provider": {
+    "gateway": {
+      "models": {
+        "example-model": {
+          "options": {
+            "customRouting": true
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            }
+          }
+        },
+        "manual-only-model": {
+          "name": "Manual Only Model"
+        }
+      }
+    }
+  }
+}
+```
+
+If `example-model` was discovered with a name, limits, modalities, and capability metadata, those fields remain available and `options.customRouting` plus `variants.high` are added. `manual-only-model` remains available even if the provider does not return it from its discovery endpoint.
+
+OpenCode validates `provider.<name>.models.<model-id>` against its own model schema before plugins run. Use documented model fields such as `options` or `variants` for custom values; arbitrary top-level keys are removed by OpenCode and cannot be merged by this plugin.
+
+The persisted cache stores only the filtered and enriched discovered base models. It does not store explicit `provider.<name>.models` configuration, so explicit customizations are applied from the active OpenCode config on every startup. This keeps provider inventory data separate from user configuration.
 
 ## Default Enablement
 

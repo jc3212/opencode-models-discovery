@@ -391,10 +391,14 @@ export async function enhanceConfig(
         modelID,
         mergeModelOverride(model, persistedState?.overrides?.[modelID]),
       ]))
+      const modelsWithExplicitConfig = Object.fromEntries(Object.entries(existingModels).map(([modelID, model]) => [
+        modelID,
+        modelID in modelsWithOverrides ? mergeModelOverride(modelsWithOverrides[modelID], model) : model,
+      ]))
 
       p.models = {
         ...modelsWithOverrides,
-        ...existingModels,
+        ...modelsWithExplicitConfig,
       }
       replaceInjectedModels(config, providerName, modelsWithOverrides)
 

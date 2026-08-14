@@ -302,7 +302,7 @@ export async function enhanceConfig(
           provider: providerName,
           count: modelsDevCache.size,
         })
-      } else if (!usingPersistedModels && (modelInfoFormat === ModelInfoFormat.Bifrost || modelInfoFormat === ModelInfoFormat.VLLM)) {
+      } else if (!usingPersistedModels && (modelInfoFormat === ModelInfoFormat.Bifrost || modelInfoFormat === ModelInfoFormat.OmniRoute || modelInfoFormat === ModelInfoFormat.VLLM)) {
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LMStudio) {
         const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
@@ -391,10 +391,14 @@ export async function enhanceConfig(
         modelID,
         mergeModelOverride(model, persistedState?.overrides?.[modelID]),
       ]))
+      const modelsWithExplicitConfig = Object.fromEntries(Object.entries(existingModels).map(([modelID, model]) => [
+        modelID,
+        modelID in modelsWithOverrides ? mergeModelOverride(modelsWithOverrides[modelID], model) : model,
+      ]))
 
       p.models = {
         ...modelsWithOverrides,
-        ...existingModels,
+        ...modelsWithExplicitConfig,
       }
       replaceInjectedModels(config, providerName, modelsWithOverrides)
 

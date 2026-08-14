@@ -271,6 +271,7 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="litellm"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="vllm"')
         expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="lmstudio"')
+        expect(config.command['models-discovery:config'].template).toContain('modelInfoFormat="omniroute"')
         expect(config.command['models-discovery:config'].template).toContain('max_model_len')
         expect(config.command['models-discovery:config'].template).toContain('restart opencode')
 
@@ -531,6 +532,94 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockClient.config.providers).not.toHaveBeenCalled()
     })
 
+    it('merges matching explicit models into a fresh persisted inventory', async () => {
+      const store = new ProviderModelStore(cacheRoot)
+      await store.saveModels({
+        id: 'cached',
+        baseURL: 'http://127.0.0.1:8000',
+        endpoint: '/v1/models',
+      }, {
+        'cached-model': {
+          id: 'cached-model',
+          name: 'Cached Model',
+          limit: { context: 32768, output: 4096 },
+          modalities: { input: ['text', 'image'], output: ['text'] },
+          reasoning: true,
+        },
+      })
+
+      const config: any = {
+        provider: {
+          cached: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8000/v1',
+              modelsDiscovery: { cache: { enabled: true } },
+            },
+            models: {
+              'cached-model': {
+                id: 'other-model',
+                variants: { custom: { reasoningEffort: 'high' } },
+              },
+              standalone: { name: 'Standalone Model' },
+            },
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(config.provider.cached.models).toEqual({
+        'cached-model': {
+          id: 'cached-model',
+          name: 'Cached Model',
+          limit: { context: 32768, output: 4096 },
+          modalities: { input: ['text', 'image'], output: ['text'] },
+          reasoning: true,
+          variants: { custom: { reasoningEffort: 'high' } },
+        },
+        standalone: { name: 'Standalone Model' },
+      })
+      expect(mockFetch).not.toHaveBeenCalled()
+    })
+
+    it('merges matching explicit models into discovered enriched metadata', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{ id: 'chat-model', object: 'model', max_model_len: 32768 }],
+        }),
+      })
+
+      const config: any = {
+        provider: {
+          test: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:8000/v1',
+              modelsDiscovery: { modelInfoFormat: 'vllm', smartModelName: true },
+            },
+            models: {
+              'chat-model': {
+                id: 'other-model',
+                variants: { custom: { reasoningEffort: 'high' } },
+              },
+            },
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(config.provider.test.models['chat-model']).toEqual({
+        id: 'chat-model',
+        name: 'Chat Model',
+        limit: { context: 32768, output: 32768 },
+        modalities: { input: ['text'], output: ['text'] },
+        variants: { custom: { reasoningEffort: 'high' } },
+      })
+    })
+
     it('persists only filtered enriched models and reuses their metadata', async () => {
       mockFetch.mockResolvedValueOnce({
         ok: true,
@@ -631,6 +720,50 @@ describe('ModelDiscovery Plugin', () => {
         limit: { context: 200000, input: 200000, output: 8192 },
         modalities: { input: ['text', 'image', 'audio'], output: ['text'] },
         cost: { input: 3, output: 15 },
+      })
+    })
+
+    it('enriches OmniRoute inline metadata without another request', async () => {
+      mockFetch.mockResolvedValueOnce({
+        ok: true,
+        json: async () => ({
+          data: [{
+            id: 'oc/mimo-v2.5-free',
+            object: 'model',
+            created: 0,
+            owned_by: 'oc',
+            context_length: 128000,
+            max_input_tokens: 120000,
+            max_output_tokens: 8192,
+            input_modalities: ['TEXT', 'IMAGE'],
+            output_modalities: ['TEXT'],
+            capabilities: { vision: true, tool_calling: true, reasoning: true },
+          }],
+        }),
+      })
+
+      const config: any = {
+        provider: {
+          omniroute: {
+            npm: '@ai-sdk/openai-compatible',
+            options: {
+              baseURL: 'http://127.0.0.1:20128/v1',
+              modelsDiscovery: { modelInfoFormat: 'omniroute' },
+            },
+            models: {},
+          },
+        },
+      }
+
+      await pluginHooks.config(config)
+
+      expect(mockFetch).toHaveBeenCalledTimes(1)
+      expect(config.provider.omniroute.models['oc/mimo-v2.5-free']).toMatchObject({
+        id: 'oc/mimo-v2.5-free',
+        limit: { context: 128000, input: 120000, output: 8192 },
+        modalities: { input: ['text', 'image'], output: ['text'] },
+        tool_call: true,
+        reasoning: true,
       })
     })
 
@@ -1980,7 +2113,11 @@ describe('ModelDiscovery Plugin', () => {
 
       await hooksWithConfig.config(config)
 
-      expect(config.provider.ollama.models['keep-me']).toEqual({ name: 'Keep Me' })
+      expect(config.provider.ollama.models['keep-me']).toEqual({
+        id: 'keep-me',
+        name: 'Keep Me',
+        modalities: { input: ['text'], output: ['text'] },
+      })
       expect(config.provider.ollama.models['discover-me']).toBeDefined()
     })
 

@@ -40,7 +40,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.endpoint` | `string` | Provider-specific models endpoint path. Defaults to `/v1/models` |
 | `provider.<name>.options.modelsDiscovery.timeoutMs` | positive finite `number` | Per-request timeout for the provider's models and provider-specific metadata endpoints. Defaults to `3000` |
 | `provider.<name>.options.modelsDiscovery.modelInfoEndpoint` | `string` | Override a format-specific metadata endpoint. Defaults to `/v1/model/info` for `"litellm"` and `/api/v1/models` for `"lmstudio"` |
-| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"bifrost"`, `"litellm"`, `"models.dev"`, `"vllm"`, and `"lmstudio"` |
+| `provider.<name>.options.modelsDiscovery.modelInfoFormat` | `string` | Model info response format. Currently supports `"bifrost"`, `"litellm"`, `"models.dev"`, `"vllm"`, `"lmstudio"`, and `"omniroute"` |
 | `provider.<name>.options.modelsDiscovery.filterNonChat` | `boolean` | When model info is available, skip models whose `model_info.mode` is not `chat`. Defaults to `true` |
 | `provider.<name>.options.modelsDiscovery.models.includeRegex` | `string[]` | Shortcut regex allow-list for discovered model ids only |
 | `provider.<name>.options.modelsDiscovery.models.excludeRegex` | `string[]` | Shortcut regex deny-list for discovered model ids only |
@@ -107,9 +107,51 @@ A fresh cached model set is injected without requesting the provider models endp
 
 Each cache file contains a version, provider id, normalized base URL, endpoint, fetch time, and the final discovered model configurations, including enriched OpenCode capability metadata. Models rejected by filters, categorization, or metadata enrichment eligibility are not cached. It never contains API keys, authorization headers, credentials, or raw model-info endpoint responses. A cache file with another provider identity or an unsupported schema version is treated as a cache miss.
 
-Saved per-model overrides are separate from plugin-generated cached model configurations and are managed through `/models-discovery:config`. Overrides merge recursively for objects, replace arrays, cannot change `id`, and apply only when the model is present in the current valid discovered model set. Explicit `provider.<name>.models` configuration is applied last and remains higher priority. An override for a model absent from a refreshed model set stays saved but inactive until that model returns.
+Saved per-model overrides are separate from plugin-generated cached model configurations and are managed through `/models-discovery:config`. Overrides merge recursively for objects, replace arrays, cannot change `id`, and apply only when the model is present in the current valid discovered model set. An override for a model absent from a refreshed model set stays saved but inactive until that model returns.
 
 See [Persisted Model Discovery Cache](persisted-model-discovery.md) for the complete cache schema, lifecycle, override behavior, and security boundary.
+
+## Model Assembly And Customization
+
+For each eligible provider, the plugin produces its final `provider.<name>.models` map in this order:
+
+1. Obtain the discovered model set from a fresh provider request or a valid persisted cache entry.
+2. For a live request, apply model filters, build OpenCode model configuration, and apply the optional `modelInfoFormat` enrichment.
+3. Apply saved plugin-managed per-model overrides when present.
+4. Apply matching explicit `provider.<name>.models.<model-id>` configuration from `opencode.json`.
+5. Preserve explicit model entries whose ids were not discovered as standalone models.
+
+For a matching model id, the discovered or cached configuration is the base and explicit configuration is a recursive override. Nested objects merge, while arrays and scalar values replace the existing value. The discovered model id remains authoritative, so an explicit `id` value cannot rename it.
+
+```json
+{
+  "provider": {
+    "gateway": {
+      "models": {
+        "example-model": {
+          "options": {
+            "customRouting": true
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            }
+          }
+        },
+        "manual-only-model": {
+          "name": "Manual Only Model"
+        }
+      }
+    }
+  }
+}
+```
+
+If `example-model` was discovered with a name, limits, modalities, and capability metadata, those fields remain available and `options.customRouting` plus `variants.high` are added. `manual-only-model` remains available even if the provider does not return it from its discovery endpoint.
+
+OpenCode validates `provider.<name>.models.<model-id>` against its own model schema before plugins run. Use documented model fields such as `options` or `variants` for custom values; arbitrary top-level keys are removed by OpenCode and cannot be merged by this plugin.
+
+The persisted cache stores only the filtered and enriched discovered base models. It does not store explicit `provider.<name>.models` configuration, so explicit customizations are applied from the active OpenCode config on every startup. This keeps provider inventory data separate from user configuration.
 
 ## Default Enablement
 
@@ -200,7 +242,7 @@ Community provider examples live in [`docs/config_example/`](config_example/).
 
 The generic OpenAI-compatible `/v1/models` endpoint only guarantees a small model list shape. Extra metadata such as context limits, tool calling, reasoning, image input, or structured output is provider-specific, so metadata enrichment is opt-in.
 
-The plugin currently supports five model info formats:
+The plugin currently supports six model info formats:
 
 | Format | Source | Requires `modelInfoEndpoint` | Notes |
 |--------|--------|------------------------------|-------|
@@ -209,6 +251,35 @@ The plugin currently supports five model info formats:
 | `"models.dev"` | `https://models.dev/models.json` | No | Uses the public models.dev metadata index |
 | `"vllm"` | Fields in the provider's `/v1/models` response | No | Reads vLLM-style `max_model_len` when present |
 | `"lmstudio"` | LM Studio 0.4.0+ `/api/v1/models` inventory | No | Uses `/api/v1/models` by default; set `modelInfoEndpoint` for another path |
+| `"omniroute"` | Fields in OmniRoute's `/v1/models` response | No | Reads OmniRoute inline limits, modalities, and capabilities when present |
+
+### OmniRoute Model Info
+
+Use `modelInfoFormat: "omniroute"` for an [OmniRoute](https://github.com/diegosouzapw/OmniRoute) provider. It reads OmniRoute's documented inline metadata from the same `/v1/models` response and does not make another metadata request.
+
+```json
+{
+  "plugin": ["opencode-models-discovery"],
+  "provider": {
+    "omniroute": {
+      "npm": "@ai-sdk/openai-compatible",
+      "name": "OmniRoute",
+      "options": {
+        "baseURL": "http://127.0.0.1:20128/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "modelInfoFormat": "omniroute"
+        }
+      },
+      "models": {}
+    }
+  }
+}
+```
+
+For each discovered model, the plugin maps `context_length`, `max_input_tokens`, and `max_output_tokens` to `limit.context`, `limit.input`, and `limit.output` when both context and output limits are present. It maps `input_modalities` and `output_modalities` to lower-case OpenCode modalities, translating `SPEECH` to `audio` and ignoring unsupported values. When no valid input modalities are reported, `capabilities.vision: true` enables `text` and `image` input. The plugin also maps OmniRoute's `attachment`, `reasoning`, `tool_calling`, `structured_output`, and `temperature` capability booleans. Missing or malformed metadata is left unset.
+
+This format is intentionally explicit because these fields are OmniRoute extensions to the generic OpenAI-compatible model-list response. For the most complete OmniRoute integration, including dynamic provider support, use OmniRoute's official `@omniroute/opencode-plugin`.
 
 ### Bifrost Model Info
 

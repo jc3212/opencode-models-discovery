@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import {
   computeReasoningFingerprint,
+  computeRelayDigest,
   computeMetadataSignature,
   hashString,
 } from '../src/reasoning/cache-fingerprint'
@@ -104,5 +105,37 @@ describe('metadata signature', () => {
   it('hashes strings deterministically', () => {
     expect(hashString('a')).toBe(hashString('a'))
     expect(hashString('a')).not.toBe(hashString('b'))
+  })
+})
+
+describe('relay digest fingerprinting (design §50)', () => {
+  it('changes when the relay preferred host changes', () => {
+    const openrouter = computeRelayDigest(
+      { kind: 'new-api', dynamic: true },
+      { preferredHost: 'openrouter', possibleHosts: ['openrouter', 'openai'] },
+    )
+    const openai = computeRelayDigest(
+      { kind: 'new-api', dynamic: true },
+      { preferredHost: 'openai', possibleHosts: ['openai', 'openrouter'] },
+    )
+    expect(openrouter).not.toBe(openai)
+  })
+
+  it('is deterministic and order-independent for possibleHosts', () => {
+    const a = computeRelayDigest({ kind: 'new-api', dynamic: true }, { preferredHost: 'openai', possibleHosts: ['openai', 'openrouter', 'anthropic'] })
+    const b = computeRelayDigest({ kind: 'new-api', dynamic: true }, { preferredHost: 'openai', possibleHosts: ['anthropic', 'openrouter', 'openai'] })
+    expect(a).toBe(b)
+  })
+
+  it('changes the reasoning fingerprint when relay digest changes', () => {
+    const fpA = computeReasoningFingerprint({
+      reasoningConfig: { enabled: true, transport: 'auto' },
+      relayDigest: 'digest-A',
+    })
+    const fpB = computeReasoningFingerprint({
+      reasoningConfig: { enabled: true, transport: 'auto' },
+      relayDigest: 'digest-B',
+    })
+    expect(fpA).not.toBe(fpB)
   })
 })

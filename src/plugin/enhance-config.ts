@@ -99,7 +99,8 @@ function getExplicitModels(config: object, providerID: string, models: Record<st
  * are stripped before injection.
  */
 async function computeCurrentReasoningFingerprint(
-  providerDiscoveryConfig: ProviderDiscoveryConfig
+  providerDiscoveryConfig: ProviderDiscoveryConfig,
+  relayDigest?: string
 ): Promise<string | undefined> {
   let metadataSignature: string | undefined
   if (providerDiscoveryConfig.modelInfoFormat === ModelInfoFormat.ModelsDev) {
@@ -110,6 +111,7 @@ async function computeCurrentReasoningFingerprint(
     reasoningConfig: providerDiscoveryConfig.reasoning,
     modelInfoFormat: providerDiscoveryConfig.modelInfoFormat,
     metadataSignature,
+    relayDigest,
   })
 }
 

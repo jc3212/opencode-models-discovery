@@ -287,6 +287,56 @@ variants. User configuration is never overwritten by the plugin.
 
 ## Reasoning Coverage Audit
 
+## Anonymous Relays and the Client-Side Identity Limit
+
+Relays such as New API, Sub2API, One API, and similar anonymous gateways expose
+a single OpenAI-style endpoint. They translate requests internally and forward
+them to a real upstream. This has two consequences the plugin is honest about:
+
+1. **OpenCode talks to the relay ingress, not the hidden upstream.** The plugin
+   must send the reasoning semantic the relay accepts; the relay converts it
+   to each upstream's format. New API, for example, already converts client
+   `reasoning_effort` into OpenRouter `reasoning.effort` or Claude thinking.
+
+2. **A bare model id is not proof of the true upstream.** If a relay maps the
+   public name `gpt-x` to `some-other-model` and does not publish the
+   mapping, no client can verify the real model identity purely from
+   `/v1/models`. This is an information-theoretic limit, not a plugin bug.
+
+### What the plugin does with relays
+
+- **Preserves** `/v1/models` metadata: `owned_by`, `supported_endpoint_types`,
+  `reasoning_options`, Sub2API Grok `supportsReasoningEffort`/
+  `reasoningEfforts`.
+- **Treats `owned_by` as route evidence** (preferred host, dynamic=true),
+  never as a request-level guarantee - channel priority/weight/retry can change
+  it.
+- **Computes safe capability consensus**: when a model id matches several
+  models.dev hosts with different controls, it uses the INTERSECTION of what
+  every candidate explicitly supports. A candidate with missing metadata means
+  unresolved (missing != unsupported).
+- **Stays shadow-only for relay consensus**: relay-aware consensus results are
+  computed and reported by the audit, but not injected into runtime variants
+  until a path passes local conformance and shows meaningful coverage. Only
+  provider-native exact metadata (Grok, reasoning_options) is injected today.
+- **Never guesses by model name**: `gpt-x` or `claude-x` never imply a fixed
+  transport or effort set.
+
+### The durable fix is upstream metadata
+
+The plugin cannot reach 100% automatic coverage for anonymous relays alone.
+The proposed durable fix is for relays to publish capability metadata on
+`/v1/models`:
+
+- New API: `reasoning_options` computed as the safe intersection over its
+  enabled channels (see `docs/proposals/new-api-reasoning-metadata.md`).
+- Sub2API: `platforms` + `reasoning_options` (Grok already emits
+  `reasoningEfforts` today; see `docs/proposals/sub2api-reasoning-metadata.md`).
+
+The plugin detects and uses these fields automatically when present; it does
+not depend on the proposals being merged.
+
+
 A read-only, sanitized audit tool reports reasoning coverage per provider
 without sending any inference:
 

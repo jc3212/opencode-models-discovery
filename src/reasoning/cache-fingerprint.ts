@@ -24,6 +24,12 @@ export interface ReasoningFingerprintInput {
   modelInfoFormat?: ModelInfoFormat
   /** Hash of the models.dev metadata used to derive variants. */
   metadataSignature?: string
+  /**
+   * Digest of relay evidence (design §50): relay kind, ingress surface, and
+   * route evidence. When New API's preferred channel (owned_by) changes, the
+   * digest changes and cached automatic variants are recomputed.
+   */
+  relayDigest?: string
 }
 
 /** FNV-1a 32-bit hex; deterministic, dependency-free. */
@@ -59,6 +65,7 @@ export function computeReasoningFingerprint(input: ReasoningFingerprintInput): s
     aliases,
     modelInfoFormat: input.modelInfoFormat ?? null,
     metadataSignature: input.metadataSignature ?? null,
+    relayDigest: input.relayDigest ?? null,
   }
 
   return hashString(JSON.stringify(payload))
@@ -76,4 +83,22 @@ export function computeMetadataSignature(cache: Map<string, ModelsDevModel>): st
     )
     .sort()
   return hashString(entries.join('|'))
+}
+
+/**
+ * Computes a digest of relay route evidence for fingerprinting (design §50):
+ * relay kind, preferred host, and dynamic routing flag. A change in New API's
+ * preferred channel invalidates cached automatic variants.
+ */
+export function computeRelayDigest(
+  relay: { kind: string; dynamic: boolean } | undefined,
+  route: { preferredHost?: string; possibleHosts: string[] } | undefined,
+): string | undefined {
+  if (!relay && !route) return undefined
+  return hashString(JSON.stringify({
+    kind: relay?.kind ?? null,
+    dynamic: relay?.dynamic ?? false,
+    preferredHost: route?.preferredHost ?? null,
+    possibleHosts: (route?.possibleHosts ?? []).slice().sort(),
+  }))
 }

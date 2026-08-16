@@ -9,6 +9,8 @@ import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProvide
 import { fetchModelsDevData, type ModelsDevModel } from '../utils/models-dev-fetcher'
 import { applyReasoningEnrichment } from '../reasoning/enricher'
 import { computeReasoningFingerprint, computeMetadataSignature } from '../reasoning/cache-fingerprint'
+import { buildReasoningCoverageReport } from '../reasoning/coverage'
+import type { ResolvedReasoning } from '../reasoning/types'
 import { isInventoryFresh, mergeModelOverride, ProviderModelStore, type ProviderModelState } from './provider-model-store'
 import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
@@ -411,6 +413,7 @@ export async function enhanceConfig(
 
       const existingModels = getExplicitModels(config, providerName, p.models || {})
       let chatModelsCount = 0
+      const reasoningResolutions: ResolvedReasoning[] = []
 
       const hasProviderModelRegexFilter = !!providerDiscoveryConfig.models?.includeRegex?.length || !!providerDiscoveryConfig.models?.excludeRegex?.length
       const providerModelRegexFilter = getProviderModelRegexFilter(providerDiscoveryConfig, logger.child({ category: 'filtering' }))
@@ -458,7 +461,7 @@ export async function enhanceConfig(
           modelInfoEnricher?.applyModelInfo(modelConfig, model.id, model)
 
           if (providerDiscoveryConfig.reasoning?.enabled !== false) {
-            applyReasoningEnrichment({
+            const enrichment = applyReasoningEnrichment({
               modelConfig,
               modelId: model.id,
               providerConfig: p,
@@ -468,9 +471,17 @@ export async function enhanceConfig(
               outputLimit: modelConfig.limit?.output,
               log: (message, extra) => logger.info(message, extra),
             })
+            if (enrichment.resolution) {
+              reasoningResolutions.push(enrichment.resolution)
+            }
           }
 
           discoveredModels[modelKey] = modelConfig
+        }
+
+        if (reasoningResolutions.length > 0) {
+          const coverage = buildReasoningCoverageReport(providerName, reasoningResolutions)
+          logger.info('[reasoning-summary]', { ...coverage.summary })
         }
 
         if (cacheEnabled) {

@@ -73,6 +73,27 @@ export class FakeProvider {
         this.json(res, 200, this.options.chatResponse ?? defaultChatResponse())
         return
       }
+      if (url === '/v1/messages') {
+        // Anthropic messages API.
+        this.json(res, 200, {
+          id: 'msg_test',
+          type: 'message',
+          role: 'assistant',
+          model: 'test',
+          content: [{ type: 'text', text: 'ok' }],
+          stop_reason: 'end_turn',
+          usage: { input_tokens: 1, output_tokens: 1 },
+        })
+        return
+      }
+      if (url.endsWith(':generateContent') || url.endsWith(':streamGenerateContent')) {
+        // Google Generative Language API (Gemini).
+        this.json(res, 200, {
+          candidates: [{ content: { role: 'model', parts: [{ text: 'ok' }] }, finishReason: 'STOP' }],
+          usageMetadata: { promptTokenCount: 1, candidatesTokenCount: 1, totalTokenCount: 2 },
+        })
+        return
+      }
       this.json(res, 404, { error: { message: 'not found' } })
     })
   }

@@ -93,6 +93,14 @@ export interface ReasoningCapability {
   canonicalModelId?: string
   /** The host API that exposed these controls (when known). */
   metadataHostId?: string
+  /** Evidence trail explaining WHY this capability was resolved (design §20). */
+  evidence?: ReasoningEvidence[]
+}
+
+export interface ReasoningEvidence {
+  source: 'provider-native' | 'models.dev' | 'verified-profile' | 'user'
+  confidence: 'exact' | 'high' | 'medium'
+  detail?: string
 }
 
 export type ReasoningTransportType =

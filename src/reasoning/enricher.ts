@@ -11,6 +11,7 @@ import { compileReasoningVariants } from './compiler'
 import { summarizeReasoningResolution } from './diagnostics'
 import type { ModelsDevModel } from '../utils/models-dev-fetcher'
 import type { ReasoningMetadata } from '../utils/model-info/types'
+import { normalizeProviderNativeReasoningMetadata } from '../utils/model-info/provider-native-reasoning'
 
 /**
  * Orchestrates the full reasoning enrichment pipeline for one discovered
@@ -154,16 +155,5 @@ export function applyReasoningEnrichment(input: ReasoningEnricherInput): Reasoni
 }
 
 function normalizeProviderMetadata(value: unknown): ReasoningMetadata | undefined {
-  const raw = value as Record<string, unknown>
-  if (!raw || typeof raw !== 'object') {
-    return undefined
-  }
-  if (Array.isArray(raw.reasoning_options)) {
-    return {
-      reasoning: true,
-      options: raw.reasoning_options as ReasoningCapability['options'],
-      source: 'provider-native',
-    }
-  }
-  return undefined
+  return normalizeProviderNativeReasoningMetadata(value)
 }

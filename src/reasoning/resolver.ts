@@ -81,6 +81,7 @@ export function resolveReasoningCapability(input: ReasoningCapabilityInput): Rea
       source: 'provider-native',
       confidence: options.length > 0 ? 'exact' : 'none',
       canonicalModelId: canonical?.canonicalModelId,
+      evidence: [{ source: 'provider-native', confidence: 'exact', detail: 'inline reasoning_options from provider /v1/models' }],
     }
   }
 
@@ -100,6 +101,7 @@ export function resolveReasoningCapability(input: ReasoningCapabilityInput): Rea
       source: 'models.dev',
       confidence: picked.confidence,
       canonicalModelId: canonical?.canonicalModelId,
+      evidence: [{ source: 'models.dev', confidence: picked.confidence === 'exact' ? 'exact' : picked.confidence === 'high' ? 'high' : 'medium', detail: `canonical ${canonical?.canonicalModelId ?? 'unknown'} from models.dev` }],
     }
   }
 

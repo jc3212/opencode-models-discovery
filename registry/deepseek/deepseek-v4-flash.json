@@ -1,0 +1,32 @@
+{
+  "model": "deepseek/deepseek-v4-flash",
+  "aliases": [
+    "deepseek-v4-flash"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "none",
+        "low",
+        "high",
+        "xhigh"
+      ],
+      "default": "high",
+      "aliases": {
+        "medium": "high"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "deepseek",
+      "verifiedAt": "2026-08-16",
+      "url": "https://api-docs.deepseek.com"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

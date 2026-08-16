@@ -1,0 +1,28 @@
+{
+  "model": "alibaba/qwen3-235b-a22b",
+  "aliases": [
+    "qwen3-235b-a22b"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "alibaba",
+      "verifiedAt": "2026-08-16",
+      "url": "https://www.alibabacloud.com/help/model-studio"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

@@ -1,0 +1,22 @@
+{
+  "model": "moonshot/kimi-k2.6",
+  "aliases": [
+    "kimi-k2.6"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "toggle"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "moonshot",
+      "verifiedAt": "2026-08-16",
+      "url": "https://platform.moonshot.ai"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

@@ -1,0 +1,31 @@
+{
+  "model": "zai/glm-5.1",
+  "aliases": [
+    "glm-5.1"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "high",
+        "max"
+      ],
+      "default": "high",
+      "aliases": {
+        "low": "high",
+        "medium": "high"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "zai",
+      "verifiedAt": "2026-08-16",
+      "url": "https://docs.z.ai"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

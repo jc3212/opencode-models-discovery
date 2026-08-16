@@ -1,0 +1,30 @@
+{
+  "model": "anthropic/claude-opus-4-7",
+  "aliases": [
+    "claude-opus-4-7"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "max"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "anthropic",
+      "verifiedAt": "2026-08-16",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

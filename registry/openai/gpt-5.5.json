@@ -1,0 +1,30 @@
+{
+  "model": "openai/gpt-5.5",
+  "aliases": [
+    "gpt-5.5"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "openai",
+      "verifiedAt": "2026-08-16",
+      "url": "https://platform.openai.com/docs/models"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

@@ -1,0 +1,32 @@
+{
+  "model": "deepseek/deepseek-v4-pro",
+  "aliases": [
+    "deepseek-v4-pro"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "low",
+        "high",
+        "max"
+      ],
+      "default": "high",
+      "aliases": {
+        "medium": "high",
+        "xhigh": "high"
+      }
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "deepseek",
+      "verifiedAt": "2026-08-16",
+      "url": "https://api-docs.deepseek.com"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

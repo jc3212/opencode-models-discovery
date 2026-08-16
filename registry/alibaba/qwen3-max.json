@@ -1,0 +1,29 @@
+{
+  "model": "alibaba/qwen3-max",
+  "aliases": [
+    "qwen3-max"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "low",
+        "medium",
+        "high",
+        "xhigh"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "alibaba",
+      "verifiedAt": "2026-08-16",
+      "url": "https://www.alibabacloud.com/help/model-studio"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

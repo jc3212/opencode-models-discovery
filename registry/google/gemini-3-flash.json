@@ -1,0 +1,28 @@
+{
+  "model": "google/gemini-3-flash",
+  "aliases": [
+    "gemini-3-flash"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "google",
+      "verifiedAt": "2026-08-16",
+      "url": "https://ai.google.dev/gemini-api/docs/thinking"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

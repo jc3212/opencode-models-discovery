@@ -47,10 +47,24 @@ export interface ProviderDiscoveryCacheConfig {
 
 export interface ProviderReasoningConfig {
   enabled?: boolean
-  /** Explicit reasoning transport: auto | openai-compatible-effort | openrouter | dashscope-chat | anthropic | google | alibaba-sdk */
+  /** Explicit reasoning transport: auto | openai-compatible-effort | openrouter | dashscope-chat | anthropic | google | alibaba-sdk | openai */
   transport?: string
   /** Map discovered model ids to canonical models for metadata lookup. */
   aliases?: Record<string, string>
+  /**
+   * Capability policy (design §21-24):
+   * - "strict" (default): only inject variants when the current provider/host
+   *   has sufficient evidence (provider-native metadata or models.dev).
+   * - "official-model": additionally allow the official local registry to
+   *   provide capability when the provider has no metadata, as long as the
+   *   transport is known.
+   */
+  capabilityPolicy?: 'strict' | 'official-model'
+  /**
+   * Relay hint: auto | new-api | sub2api | none. Helps detection when the
+   * provider id does not reveal the relay implementation.
+   */
+  relay?: 'auto' | 'new-api' | 'sub2api' | 'none'
 }
 
 export interface ProviderDiscoveryConfig {

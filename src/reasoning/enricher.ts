@@ -1,6 +1,7 @@
 import type { ProviderDiscoveryConfig } from '../types/plugin-config'
 import type {
   ReasoningCapability,
+  ReasoningCapabilityConfidence,
   ResolvedReasoning,
   TransportResolution,
 } from './types'
@@ -12,6 +13,8 @@ import { summarizeReasoningResolution } from './diagnostics'
 import type { ModelsDevModel } from '../utils/models-dev-fetcher'
 import type { ReasoningMetadata } from '../utils/model-info/types'
 import { normalizeProviderNativeReasoningMetadata } from '../utils/model-info/provider-native-reasoning'
+import type { ReasoningRegistry, OfficialReasoningCapability } from './registry/types'
+import { resolveOfficialModelCapability } from './registry/resolver'
 
 /**
  * Orchestrates the full reasoning enrichment pipeline for one discovered
@@ -30,6 +33,8 @@ export interface ReasoningEnricherInput {
   discoveryConfig?: ProviderDiscoveryConfig
   modelsDevIndex?: Map<string, ModelsDevModel>
   providerMetadata?: unknown
+  /** Bundled official model registry (design §16, §53). */
+  registry?: ReasoningRegistry
   outputLimit?: number
   log?: (message: string, extra?: Record<string, unknown>) => void
 }
@@ -81,6 +86,30 @@ export function resolveReasoningForModel(input: ReasoningEnricherInput): Resolve
 
   const providerId = typeof input.providerConfig.providerId === 'string' ? input.providerConfig.providerId : undefined
   const signals = providerSignals(providerConfig, providerId)
+
+  // Official registry fallback (design §16, §21-24): when the policy is
+  // "official-model" and no provider/host metadata resolved, an exact
+  // registry match provides the official capability. Transport must still be
+  // known before anything is compiled.
+  let registryCapability: OfficialReasoningCapability | undefined
+  if (reasoningConfig?.capabilityPolicy === 'official-model' && (!capability.reasoning || capability.options.length === 0)) {
+    const registryMatch = resolveOfficialModelCapability(modelId, input.registry, { aliases })
+    if (registryMatch) {
+      registryCapability = registryMatch.capability
+      capability = {
+        reasoning: registryCapability.reasoning,
+        options: registryCapability.controls.map((c) => {
+          if (c.type === 'effort') return { type: 'effort' as const, values: c.values }
+          if (c.type === 'toggle') return { type: 'toggle' as const }
+          return { type: 'budget_tokens' as const, ...(c.min !== undefined ? { min: c.min } : {}), ...(c.max !== undefined ? { max: c.max } : {}) }
+        }),
+        source: 'official-registry',
+        confidence: 'model-official' as ReasoningCapabilityConfidence,
+        canonicalModelId: registryCapability.model,
+        evidence: [{ source: 'official-registry', confidence: 'high', detail: registryCapability.sources.map((s) => s.type).join('+') }],
+      }
+    }
+  }
 
   const transport: TransportResolution = resolveReasoningTransport({
     ...signals,

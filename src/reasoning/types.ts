@@ -73,11 +73,12 @@ export interface CanonicalModelResolution {
 export type ReasoningCapabilitySource =
   | 'provider-native'
   | 'models.dev'
+  | 'official-registry'
   | 'user'
   | 'safe-rule'
   | 'none'
 
-export type ReasoningCapabilityConfidence = 'exact' | 'high' | 'medium' | 'low' | 'none'
+export type ReasoningCapabilityConfidence = 'exact' | 'high' | 'medium' | 'low' | 'none' | 'model-official'
 
 /**
  * What the metadata says the host API can control.
@@ -98,7 +99,7 @@ export interface ReasoningCapability {
 }
 
 export interface ReasoningEvidence {
-  source: 'provider-native' | 'models.dev' | 'verified-profile' | 'user'
+  source: 'provider-native' | 'models.dev' | 'verified-profile' | 'official-registry' | 'user'
   confidence: 'exact' | 'high' | 'medium'
   detail?: string
 }

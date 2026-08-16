@@ -1,4 +1,5 @@
 import { promises as fs } from 'node:fs'
+import { createRequire } from 'node:module'
 import path from 'node:path'
 import { xdgData } from 'xdg-basedir'
 import { ToastNotifier } from '../ui/toast-notifier'
@@ -8,6 +9,8 @@ import { createModelInfoEnricher, isSupportedModelInfoFormat, type ModelInfoEnri
 import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
 import { fetchModelsDevData, type ModelsDevModel } from '../utils/models-dev-fetcher'
 import { applyReasoningEnrichment } from '../reasoning/enricher'
+import { loadRegistry } from '../reasoning/registry/loader'
+import type { ReasoningRegistry } from '../reasoning/registry/types'
 import { computeReasoningFingerprint, computeMetadataSignature } from '../reasoning/cache-fingerprint'
 import { buildReasoningCoverageReport } from '../reasoning/coverage'
 import type { ResolvedReasoning } from '../reasoning/types'
@@ -53,6 +56,25 @@ export const providerModelStoreTestUtils = {
   },
 }
 let currentProviderModelStore = defaultProviderModelStore
+let bundledRegistry: ReasoningRegistry | undefined
+
+/**
+ * Loads the bundled official model registry once (design §29). Offline,
+ * fail-open: an invalid or absent registry yields undefined and never breaks
+ * discovery.
+ */
+async function getBundledRegistry(): Promise<ReasoningRegistry | undefined> {
+  if (bundledRegistry !== undefined) return bundledRegistry
+  try {
+    // createRequire is compatible across Node/bun/vitest runtimes and avoids
+    // import-attribute differences for JSON modules.
+    const require = createRequire(import.meta.url)
+    bundledRegistry = loadRegistry(require('../generated/reasoning-registry.json'))
+  } catch {
+    bundledRegistry = undefined
+  }
+  return bundledRegistry
+}
 const injectedModelsByConfig = new WeakMap<object, Map<string, Map<string, unknown>>>()
 
 function getInjectedModels(config: object, providerID: string): Map<string, unknown> {
@@ -470,6 +492,7 @@ export async function enhanceConfig(
               discoveryConfig: providerDiscoveryConfig,
               modelsDevIndex: modelsDevCache,
               providerMetadata: model,
+              registry: await getBundledRegistry(),
               outputLimit: modelConfig.limit?.output,
               log: (message, extra) => logger.info(message, extra),
             })

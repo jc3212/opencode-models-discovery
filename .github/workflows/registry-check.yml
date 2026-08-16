@@ -1,0 +1,26 @@
+name: registry-check
+
+on:
+  schedule:
+    - cron: '0 3 * * 1'  # weekly Monday
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  registry-check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - name: Validate bundled registry
+        run: bun scripts/registry-tools/compile-registry.ts
+      - name: Compare against models.dev (report only, no auto-merge)
+        run: |
+          bun scripts/registry-tools/registry-check.ts > REGISTRY-DIFF.md || true
+          echo "Review REGISTRY-DIFF.md for new/changed/stale entries."
+          echo "Reasoning capability is functional data; never auto-merge."

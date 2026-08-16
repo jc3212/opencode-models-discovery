@@ -129,11 +129,13 @@ async function computeCurrentReasoningFingerprint(
     const cache = await fetchModelsDevData()
     metadataSignature = computeMetadataSignature(cache)
   }
+  const registry = await getBundledRegistry()
   return computeReasoningFingerprint({
     reasoningConfig: providerDiscoveryConfig.reasoning,
     modelInfoFormat: providerDiscoveryConfig.modelInfoFormat,
     metadataSignature,
     relayDigest,
+    registryVersion: registry?.registryVersion,
   })
 }
 

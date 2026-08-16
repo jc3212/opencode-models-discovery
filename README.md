@@ -258,6 +258,7 @@ This keeps the same provider configuration model while allowing the plugin to wo
 
 - Configuration guide: [`docs/configuration.md`](docs/configuration.md)
 - Automatic reasoning variants: [`docs/reasoning.md`](docs/reasoning.md)
+- Official model reasoning registry: [`docs/reasoning-registry.md`](docs/reasoning-registry.md)
 - Persisted model discovery cache: [`docs/persisted-model-discovery.md`](docs/persisted-model-discovery.md)
 - `/connect` credentials and auth-backed discovery: [`docs/connect-and-auth.md`](docs/connect-and-auth.md)
 - Community provider examples: [`docs/config_example/`](docs/config_example/)

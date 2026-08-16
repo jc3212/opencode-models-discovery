@@ -30,6 +30,8 @@ export interface ReasoningFingerprintInput {
    * digest changes and cached automatic variants are recomputed.
    */
   relayDigest?: string
+  /** Official registry version (design §37): registry updates invalidate old variants. */
+  registryVersion?: string
 }
 
 /** FNV-1a 32-bit hex; deterministic, dependency-free. */
@@ -66,6 +68,7 @@ export function computeReasoningFingerprint(input: ReasoningFingerprintInput): s
     modelInfoFormat: input.modelInfoFormat ?? null,
     metadataSignature: input.metadataSignature ?? null,
     relayDigest: input.relayDigest ?? null,
+    registryVersion: input.registryVersion ?? null,
   }
 
   return hashString(JSON.stringify(payload))

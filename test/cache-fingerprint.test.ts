@@ -138,4 +138,16 @@ describe('relay digest fingerprinting (design §50)', () => {
     })
     expect(fpA).not.toBe(fpB)
   })
+
+  it('changes when the official registry version changes (design §37)', () => {
+    const fpA = computeReasoningFingerprint({
+      reasoningConfig: { enabled: true, transport: 'auto' },
+      registryVersion: '2026.08.16.1',
+    })
+    const fpB = computeReasoningFingerprint({
+      reasoningConfig: { enabled: true, transport: 'auto' },
+      registryVersion: '2026.08.17.1',
+    })
+    expect(fpA).not.toBe(fpB)
+  })
 })

@@ -1,6 +1,7 @@
 {
+  "_notice": "GENERATED FILE - DO NOT EDIT DIRECTLY. Source: registry/*.json. Run: npm run registry:compile",
   "schemaVersion": 1,
-  "registryVersion": "2026.08.17.1",
+  "registryVersion": "r20464555c5",
   "models": [
     {
       "model": "openai/gpt-5.6-terra",

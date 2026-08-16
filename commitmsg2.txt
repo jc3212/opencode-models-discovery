@@ -1,0 +1,7 @@
+feat(registry): deterministic build + GENERATED header
+
+Phase 8 (design 37-40):
+- registryVersion content-derived (sha256 of sorted controls): deterministic
+  build (same sha256 across compiles) and content-change invalidation
+- Generated JSON carries GENERATED FILE - DO NOT EDIT notice
+- Tests: hash stability, header, content-derived version

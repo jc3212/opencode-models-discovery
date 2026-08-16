@@ -11,6 +11,7 @@
  */
 
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { createHash } from 'node:crypto'
 import { join } from 'path'
 import type { OfficialReasoningCapability, ReasoningRegistry } from '../../src/reasoning/registry/types'
 import { REGISTRY_SCHEMA_VERSION } from '../../src/reasoning/registry/types'
@@ -38,13 +39,22 @@ function collectEntries(): OfficialReasoningCapability[] {
   return entries
 }
 
+function contentHash(models: OfficialReasoningCapability[]): string {
+  // Deterministic: hash of the canonical + controls of every entry, sorted.
+  // registryVersion is derived from content so the build is deterministic
+  // (design §38) AND any content change invalidates cached variants (§37).
+  const digest = createHash('sha256')
+  const parts = models
+    .map((m) => m.model + ':' + JSON.stringify(m.controls) + ':' + JSON.stringify(m.aliases ?? []))
+    .sort()
+  digest.update(parts.join('|'))
+  return digest.digest('hex').slice(0, 10)
+}
+
 function main(): void {
   const entries = collectEntries()
 
-  // Registry version derived from today's date (YY.MM.DD.revision).
-  const now = new Date()
-  const pad = (n: number) => String(n).padStart(2, '0')
-  const registryVersion = `${now.getFullYear()}.${pad(now.getMonth() + 1)}.${pad(now.getDate())}.1`
+  const registryVersion = 'r' + contentHash(entries)
 
   const registry: ReasoningRegistry = {
     schemaVersion: REGISTRY_SCHEMA_VERSION,
@@ -62,8 +72,11 @@ function main(): void {
   }
 
   mkdirSync(OUT_DIR, { recursive: true })
-  writeFileSync(OUT_FILE, JSON.stringify(registry, null, 2) + '\n')
-  console.log(`[registry-compile] wrote ${OUT_FILE} with ${entries.length} models`)
+  const header = {
+    _notice: 'GENERATED FILE - DO NOT EDIT DIRECTLY. Source: registry/*.json. Run: npm run registry:compile',
+  }
+  writeFileSync(OUT_FILE, JSON.stringify({ ...header, ...registry }, null, 2) + '\n')
+  console.log(`[registry-compile] wrote ${OUT_FILE} with ${entries.length} models (version ${registryVersion})`)
 }
 
 main()

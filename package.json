@@ -23,6 +23,9 @@
     "validate": "npm run lint && npm run typecheck && npm run test:run",
     "validate:config": "bun scripts/validate-config.ts",
     "reasoning:audit": "bun scripts/audit-reasoning.ts",
+    "test:package": "bun scripts/test-package.ts",
+    "registry:compile": "bun scripts/registry-tools/compile-registry.ts",
+    "registry:check": "bun scripts/registry-tools/registry-check.ts",
     "release": "bun scripts/release.ts",
     "prepublishOnly": "npm run build"
   },

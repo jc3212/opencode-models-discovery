@@ -22,7 +22,16 @@ export interface ModelsDevModel {
   }
 }
 
-const MODELS_DEV_URL = 'https://models.dev/models.json'
+/**
+ * models.dev publishes two endpoints:
+ *   - /models.json : flat model list WITHOUT reasoning_options
+ *   - /api.json    : provider-scoped (id/env/npm/api/name/doc/models) and the
+ *                    ONLY endpoint that carries per-model reasoning_options
+ *                    (the reasoning controls this plugin consumes).
+ * OpenCode core's models.dev types reference GET /api.json. Fetch the rich
+ * endpoint so reasoning_options actually reaches the pipeline.
+ */
+const MODELS_DEV_URL = 'https://models.dev/api.json'
 const PREFIX_MATCH_MIN_SCORE = 70
 const PREFIX_MATCH_MIN_SHARED_PARTS = 2
 

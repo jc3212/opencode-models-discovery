@@ -1312,7 +1312,7 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockFetch).toHaveBeenNthCalledWith(1, 'https://api.openai.com/v1/models', expect.objectContaining({
         method: 'GET'
       }))
-      expect(mockFetch).toHaveBeenNthCalledWith(2, 'https://models.dev/models.json', expect.objectContaining({
+      expect(mockFetch).toHaveBeenNthCalledWith(2, 'https://models.dev/api.json', expect.objectContaining({
         method: 'GET'
       }))
       expect(config.provider.openai.models['openai/gpt-4o']).toEqual(expect.objectContaining({

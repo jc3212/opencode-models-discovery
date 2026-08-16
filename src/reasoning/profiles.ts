@@ -7,6 +7,11 @@ import type { ReasoningTransportType, TransportConfidence } from './types'
  * semantics (e.g. `@ai-sdk/openai-compatible` is used by relays, first-party
  * APIs, and self-hosted proxies alike).
  */
+export interface ProfileEvidence {
+  type: 'official-doc' | 'sdk-source' | 'wire-test'
+  note: string
+}
+
 export interface ProviderProfile {
   id: string
   match: {
@@ -16,6 +21,8 @@ export interface ProviderProfile {
   }
   transport: ReasoningTransportType
   confidence: TransportConfidence
+  /** Evidence trail satisfying the profile admission rule (design §22-23). */
+  evidence: ProfileEvidence[]
 }
 
 const DASHSCOPE_BASE_URL = /(^|[\./])dashscope(\.|\/|$)/i
@@ -27,48 +34,77 @@ export const KNOWN_PROVIDER_PROFILES: ProviderProfile[] = [
     match: { npm: '@openrouter/ai-sdk-provider' },
     transport: 'openrouter',
     confidence: 'exact',
+    evidence: [
+      { type: 'wire-test', note: 'reasoning.effort and reasoning.max_tokens forwarded verbatim (wire capture)' },
+      { type: 'official-doc', note: 'OpenRouter reasoning parameter docs' },
+    ],
   },
   {
     id: 'dashscope-chat',
     match: { baseURL: DASHSCOPE_BASE_URL },
     transport: 'dashscope-chat',
     confidence: 'high',
+    evidence: [
+      { type: 'wire-test', note: 'enable_thinking/thinking_budget pass through an OpenAI-compatible surface (wire capture)' },
+      { type: 'official-doc', note: 'DashScope compatible-mode thinking interface' },
+    ],
   },
   {
     id: 'dashscope-chat-intl',
     match: { baseURL: DASHSCOPE_INTL_BASE_URL },
     transport: 'dashscope-chat',
     confidence: 'high',
+    evidence: [
+      { type: 'wire-test', note: 'enable_thinking/thinking_budget pass through (wire capture)' },
+      { type: 'official-doc', note: 'DashScope intl compatible-mode thinking interface' },
+    ],
   },
   {
     id: 'dashscope-provider-id',
     match: { providerId: /(^|[\/._-])dashscope([\/._-]|$)/i },
     transport: 'dashscope-chat',
     confidence: 'high',
+    evidence: [
+      { type: 'wire-test', note: 'DashScope wire semantics captured' },
+      { type: 'official-doc', note: 'DashScope host identity from provider id' },
+    ],
   },
   {
     id: 'alibaba-sdk',
     match: { npm: '@ai-sdk/alibaba' },
     transport: 'alibaba-sdk',
     confidence: 'exact',
+    evidence: [
+      { type: 'sdk-source', note: '@ai-sdk/alibaba maps enableThinking/thinkingBudget to enable_thinking/thinking_budget' },
+      { type: 'wire-test', note: 'camelCase toggle/budget reaches wire (wire capture)' },
+    ],
   },
   {
     id: 'anthropic',
     match: { npm: '@ai-sdk/anthropic' },
     transport: 'anthropic',
     confidence: 'exact',
+    evidence: [
+      { type: 'wire-test', note: 'effort -> output_config.effort, budget -> thinking.budget_tokens, toggle -> thinking.type (wire capture)' },
+    ],
   },
   {
     id: 'google',
     match: { npm: '@ai-sdk/google' },
     transport: 'google',
     confidence: 'exact',
+    evidence: [
+      { type: 'wire-test', note: 'effort -> thinkingConfig.thinkingLevel, budget -> thinkingConfig.thinkingBudget (wire capture)' },
+    ],
   },
   {
     id: 'google-vertex',
     match: { npm: '@ai-sdk/google-vertex' },
     transport: 'google',
     confidence: 'exact',
+    evidence: [
+      { type: 'sdk-source', note: '@ai-sdk/google-vertex shares google transport semantics' },
+    ],
   },
 ]
 

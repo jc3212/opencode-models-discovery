@@ -271,6 +271,7 @@ variants. User configuration is never overwritten by the plugin.
 | Transport | Status | Wire verified | How to enable |
 |-----------|--------|---------------|---------------|
 | OpenAI-compatible effort | **VERIFIED** | yes | `transport: "openai-compatible-effort"` or known profile |
+| OpenAI (first-party, Responses API) | **VERIFIED** | yes (`reasoning.effort` + summary) | `transport: "openai"` or `npm: "@ai-sdk/openai"` |
 | DashScope / Qwen | **VERIFIED** | yes | `transport: "dashscope-chat"` |
 | OpenRouter | **VERIFIED** | yes | `transport: "openrouter"` |
 | Anthropic | **VERIFIED** | yes (effort/budget/toggle) | `transport: "anthropic"` |

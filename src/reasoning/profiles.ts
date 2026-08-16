@@ -40,6 +40,16 @@ export const KNOWN_PROVIDER_PROFILES: ProviderProfile[] = [
     ],
   },
   {
+    id: 'openai',
+    match: { npm: '@ai-sdk/openai' },
+    transport: 'openai',
+    confidence: 'exact',
+    evidence: [
+      { type: 'wire-test', note: 'reasoningEffort -> reasoning.effort + summary (Responses API wire capture)' },
+      { type: 'official-doc', note: 'OpenAI Responses API reasoning parameter docs' },
+    ],
+  },
+  {
     id: 'dashscope-chat',
     match: { baseURL: DASHSCOPE_BASE_URL },
     transport: 'dashscope-chat',
@@ -122,8 +132,9 @@ export function normalizeExplicitTransport(value: unknown): ReasoningTransportTy
     case '':
       return undefined
     case 'openai-compatible-effort':
-    case 'openai':
       return 'openai-compatible-effort'
+    case 'openai':
+      return 'openai'
     case 'openrouter':
       return 'openrouter'
     case 'dashscope-chat':

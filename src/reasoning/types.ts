@@ -105,6 +105,7 @@ export interface ReasoningEvidence {
 
 export type ReasoningTransportType =
   | 'openai-compatible-effort'
+  | 'openai'
   | 'openrouter'
   | 'dashscope-chat'
   | 'anthropic'

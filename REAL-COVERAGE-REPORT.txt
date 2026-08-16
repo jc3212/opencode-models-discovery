@@ -1,0 +1,77 @@
+[reasoning-audit] sanitized coverage (no inference sent)
+
+Provider 2chat (2chat.cc)
+  Models: 6
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 6
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider alibaba-cn (skipped, discovery disabled)
+Provider ans-heidong (www.text168.com)
+  Models: 10
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 10
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider ans-tokenshop (skipped, discovery disabled)
+Provider coding-plan (ark.cn-beijing.volces.com) - models endpoint failed
+Provider dieqiyun (hgapi.dieqiyun.top)
+  Models: 4
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 4
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider heidong (www.text168.com)
+  Models: 6
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 6
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider k3-free (hgapi.dieqiyun.top)
+  Models: 15
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 15
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider openchat (api.openclawplan.com)
+  Models: 26
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 26
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider opencode (skipped, discovery disabled)
+Provider openrouter (skipped, discovery disabled)
+Provider relaycore (api.relaycore.cn) - models endpoint failed
+Provider tokenshop (api.tokenshop.homes)
+  Models: 9
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 9
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+Provider yunzhouapi (relay.nccnxta.cn)
+  Models: 6
+  Reasoning known: 0
+  Variants available: 0
+  Capability unknown: 6
+  Transport unknown: 0
+  Verified: 0 | Resolved: 0 | Not reasoning: 0
+
+[reasoning-audit] totals
+  Providers audited: 8
+  Models: 82
+  Reasoning known: 0
+  Variants available: 0

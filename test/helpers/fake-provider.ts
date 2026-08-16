@@ -69,8 +69,27 @@ export class FakeProvider {
         this.json(res, 200, { object: 'list', data: models })
         return
       }
-      if (url === '/v1/chat/completions' || url === '/v1/responses') {
+      if (url === '/v1/chat/completions') {
         this.json(res, 200, this.options.chatResponse ?? defaultChatResponse())
+        return
+      }
+      if (url === '/v1/responses') {
+        // OpenAI Responses API body shape.
+        this.json(res, 200, {
+          id: 'resp_test',
+          object: 'response',
+          created_at: Math.floor(Date.now() / 1000),
+          status: 'completed',
+          model: 'test',
+          output: [{
+            id: 'msg_test',
+            type: 'message',
+            status: 'completed',
+            role: 'assistant',
+            content: [{ type: 'output_text', text: 'ok', annotations: [] }],
+          }],
+          usage: { input_tokens: 1, output_tokens: 1, total_tokens: 2 },
+        })
         return
       }
       if (url === '/v1/messages') {

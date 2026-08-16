@@ -45,7 +45,7 @@ export interface ReasoningCoverageReport {
 }
 
 /** Which transports have wire-level evidence (design §11 VERIFIED). */
-const VERIFIED_TRANSPORTS = new Set(['openai-compatible-effort', 'dashscope-chat', 'openrouter'])
+const VERIFIED_TRANSPORTS = new Set(['openai-compatible-effort', 'openai', 'dashscope-chat', 'openrouter', 'anthropic', 'google', 'alibaba-sdk'])
 
 /**
  * Classifies a single resolved reasoning result. The `wireVerified` flag

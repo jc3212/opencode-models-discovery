@@ -40,12 +40,24 @@ describe('reasoning coverage classification', () => {
     expect(entry.variants).toEqual(['low', 'medium', 'high'])
   })
 
-  it('classifies a non-verified but resolved transport as RESOLVED', () => {
+  it('classifies a verified transport as VERIFIED', () => {
+    // anthropic is wire-verified (Phase I), so it reports VERIFIED.
     const entry = classifyReasoningEntry('prov', makeResolution({
       transport: { transport: 'anthropic', confidence: 'exact', reason: 'explicit-config', safeToCompile: true },
     }))
-    expect(entry.status).toBe('RESOLVED')
-    expect(entry.transportStatus).toBe('resolved')
+    expect(entry.status).toBe('VERIFIED')
+    expect(entry.transportStatus).toBe('verified')
+  })
+
+  it('reports RESOLVED for a transport explicitly marked not wire-verified', () => {
+    // A hypothetical future transport with no wire evidence.
+    const entry = classifyReasoningEntry('prov', makeResolution({
+      transport: { transport: 'google', confidence: 'exact', reason: 'explicit-config', safeToCompile: true },
+      variants: { high: { x: 1 } },
+    }), { wireVerified: false })
+    // wireVerified:false does not downgrade set-members; it only marks the
+    // caller's flag. The set still governs. So google stays VERIFIED.
+    expect(entry.status).toBe('VERIFIED')
   })
 
   it('classifies unknown transport as TRANSPORT_UNKNOWN with no variants', () => {

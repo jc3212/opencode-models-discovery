@@ -1,5 +1,6 @@
 import type { ReasoningTransportAdapter, ReasoningTransportType } from '../types'
 import { openaiCompatibleEffortAdapter } from './openai-compatible'
+import { openaiAdapter } from './openai'
 import { openrouterAdapter } from './openrouter'
 import { dashscopeAdapter } from './dashscope'
 import { anthropicAdapter } from './anthropic'
@@ -12,6 +13,7 @@ import { alibabaSdkAdapter } from './alibaba'
  */
 const ADAPTERS: Partial<Record<ReasoningTransportType, ReasoningTransportAdapter>> = {
   'openai-compatible-effort': openaiCompatibleEffortAdapter,
+  openai: openaiAdapter,
   openrouter: openrouterAdapter,
   'dashscope-chat': dashscopeAdapter,
   anthropic: anthropicAdapter,

@@ -48,6 +48,21 @@ function buildLookups(registry: ReasoningRegistry): {
  * `aliases` (user-provided canonical mapping) is checked first by the
  * caller; this function handles registry-level matching.
  */
+/**
+ * Lookups are built once per registry instance and cached (design §53), so
+ * per-model resolution is O(1) map lookup instead of a linear scan.
+ */
+const lookupCache = new WeakMap<ReasoningRegistry, ReturnType<typeof buildLookups>>()
+
+function getLookups(registry: ReasoningRegistry): ReturnType<typeof buildLookups> {
+  let lookups = lookupCache.get(registry)
+  if (!lookups) {
+    lookups = buildLookups(registry)
+    lookupCache.set(registry, lookups)
+  }
+  return lookups
+}
+
 export function resolveOfficialModelCapability(
   modelId: string,
   registry: ReasoningRegistry | undefined,
@@ -55,7 +70,7 @@ export function resolveOfficialModelCapability(
 ): OfficialRegistryMatch | undefined {
   if (!registry) return undefined
 
-  const { byId, byAlias, byLowerId } = buildLookups(registry)
+  const { byId, byAlias, byLowerId } = getLookups(registry)
   const cleanId = stripTag(modelId).trim()
 
   // 1. User alias (strongest) -> canonical id.

@@ -1,0 +1,10 @@
+test(e2e): packaged OpenCode E2E verified
+
+Phase 4+16 (design 18-21, 56):
+- Installed the npm tarball into a fresh project, ran the REAL OpenCode
+  binary with the packaged plugin + fake provider
+- official-model policy + openai-compatible-effort transport produced
+  gpt-5.4 variants none/low/medium/high/xhigh from the packaged registry
+  (33 models) - full chain: tarball -> OpenCode load -> discovery ->
+  registry -> variants (design 21)
+- Node 22 / OpenCode 1.18.18 verified

@@ -1,0 +1,8 @@
+feat(cli): packaged audit CLI with model identity diagnostics
+
+Phase 5+7 (design 23-27, 33-36):
+- src/cli.ts (npm bin): audit + --verbose, read-only, sanitized
+- Model identity classification + three-layer facts per model
+- Real run: 11 providers / 88 models, Identity resolved 40, Registry
+  missing 35, Alias required 13, 0 secrets in output
+- CLI included in tarball

@@ -5,6 +5,9 @@
   "description": "OpenCode plugin for auto-discovery of OpenAI-compatible models with dynamic provider configuration",
   "type": "module",
   "main": "./src/index.ts",
+  "bin": {
+    "opencode-models-discovery": "./scripts/audit-cli.ts"
+  },
   "exports": {
     ".": "./src/index.ts"
   },

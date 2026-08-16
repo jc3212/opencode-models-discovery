@@ -1,0 +1,10 @@
+feat(release): real RC coverage audit report
+
+Phase 20 (design 64-65):
+- RC-REAL-COVERAGE-REPORT.txt: real 11 providers / 88 models
+  Identity resolved 64, Official registry matched 64, Registry missing 16,
+  Alias required 8, Transport unknown 0, Ambiguous 0
+- Every unresolved model has an explicit reason (registry-missing or
+  user-alias-required) - no bare UNKNOWN (design 65)
+- Variants generated 0 in current runtime = strict default is correct;
+  packaged E2E proved official-model generates variants

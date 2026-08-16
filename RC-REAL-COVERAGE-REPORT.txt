@@ -1,0 +1,53 @@
+Reasoning Audit
+
+Provider 2chat (2chat.cc)
+  Models: 6
+  Variants generated (current runtime): 0
+
+Provider alibaba-cn (skipped, discovery disabled or no baseURL)
+Provider ans-heidong (www.text168.com)
+  Models: 10
+  Variants generated (current runtime): 0
+
+Provider ans-tokenshop (api.tokenshop.homes)
+  Models: 6
+  Variants generated (current runtime): 0
+
+Provider coding-plan (ark.cn-beijing.volces.com) - models endpoint failed
+Provider dieqiyun (hgapi.dieqiyun.top)
+  Models: 4
+  Variants generated (current runtime): 0
+
+Provider heidong (www.text168.com)
+  Models: 6
+  Variants generated (current runtime): 0
+
+Provider k3-free (hgapi.dieqiyun.top)
+  Models: 15
+  Variants generated (current runtime): 0
+
+Provider openchat (api.openclawplan.com)
+  Models: 26
+  Variants generated (current runtime): 0
+
+Provider opencode (skipped, discovery disabled or no baseURL)
+Provider openrouter (skipped, discovery disabled or no baseURL)
+Provider relaycore (api.relaycore.cn) - models endpoint failed
+Provider tokenshop (api.tokenshop.homes)
+  Models: 9
+  Variants generated (current runtime): 0
+
+Provider yunzhouapi (relay.nccnxta.cn)
+  Models: 6
+  Variants generated (current runtime): 0
+
+--- summary ---
+Providers: 11
+Models: 88
+Identity resolved: 64
+Official registry matched: 64
+Variants generated: 0
+Registry missing: 16
+Alias required: 8
+Transport unknown: 0
+Ambiguous: 0

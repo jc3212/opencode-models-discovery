@@ -1,0 +1,35 @@
+{
+  "model": "anthropic/claude-fable-5",
+  "aliases": [
+    "claude-fable-5"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "none",
+        "low",
+        "medium",
+        "high",
+        "max"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "anthropic",
+      "verifiedAt": "2026-08-16",
+      "url": "https://docs.anthropic.com/en/docs/about-claude/models"
+    },
+    {
+      "type": "models.dev",
+      "vendor": "anthropic",
+      "verifiedAt": "2026-08-16"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

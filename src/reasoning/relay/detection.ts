@@ -47,6 +47,21 @@ export function detectRelayKind(input: RelayResolutionInput): RelayDetection {
     // Invalid/absent URL -> no signal.
   }
 
+  // 4. /v1/models response fingerprint: New API exposes owned_by +
+  // supported_endpoint_types on model objects (source research, design §15).
+  // The presence of BOTH on the first model is a strong New API signal.
+  if (input.rawModel) {
+    const raw = input.rawModel as Record<string, unknown>
+    const hasOwnedBy = typeof raw.owned_by === 'string' && raw.owned_by.length > 0
+    const hasEndpointTypes = Array.isArray(raw.supported_endpoint_types) && raw.supported_endpoint_types.length > 0
+    if (hasOwnedBy && hasEndpointTypes) {
+      return { kind: 'new-api', confidence: 'high', evidence: ['models-endpoint-owned-by+endpoint-types'], dynamic: true }
+    }
+    if (hasEndpointTypes) {
+      return { kind: 'new-api', confidence: 'medium', evidence: ['models-endpoint-supported-endpoint-types'], dynamic: true }
+    }
+  }
+
   return { kind: 'unknown-relay', confidence: 'none', evidence: ['no-relay-signal'], dynamic: false }
 }
 

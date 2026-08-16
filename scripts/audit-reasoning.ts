@@ -22,6 +22,7 @@ import { join } from 'path'
 import { normalizeBaseURL, discoverModelsFromProvider, isValidModel } from '../src/utils/openai-compatible-api'
 import { fetchModelsDevData } from '../src/utils/models-dev-fetcher'
 import { resolveReasoningForModel } from '../src/reasoning/enricher'
+import { resolveRelayAware } from '../src/reasoning/relay/shadow'
 import { buildReasoningCoverageReport } from '../src/reasoning/coverage'
 import type { ProviderDiscoveryConfig } from '../src/types/plugin-config'
 import type { ResolvedReasoning } from '../src/reasoning/types'
@@ -121,6 +122,8 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
   }
 
   const resolutions: ResolvedReasoning[] = []
+  const relayShadows: Array<{ modelId: string; safeToCompile: boolean; reason: string }> = []
+  const relayConfig = discovery?.reasoning?.relay
   for (const model of result.models.filter(isValidModel)) {
     const resolution = resolveReasoningForModel({
       modelId: model.id,
@@ -131,10 +134,38 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
       outputLimit: undefined,
     })
     if (resolution) resolutions.push(resolution)
+
+    // Shadow relay-aware resolution (does NOT inject anything).
+    const shadow = resolveRelayAware({
+      providerId,
+      npm: provider?.npm,
+      baseURL,
+      modelId: model.id,
+      rawModel: model,
+      modelsDevIndex,
+      aliases: discovery?.reasoning?.aliases,
+      relayConfig,
+    })
+    relayShadows.push({
+      modelId: model.id,
+      safeToCompile: shadow.safeToCompile,
+      reason: shadow.reason,
+    })
   }
 
   const report = buildReasoningCoverageReport(providerId, resolutions)
-  return { summary: report.summary, entries: report.entries }
+  const relaySafeCount = relayShadows.filter((s) => s.safeToCompile).length
+  const relayReasonCounts: Record<string, number> = {}
+  for (const s of relayShadows) {
+    relayReasonCounts[s.reason] = (relayReasonCounts[s.reason] ?? 0) + 1
+  }
+  return {
+    summary: report.summary,
+    entries: report.entries,
+    relaySafeCount,
+    relayReasonCounts,
+    relayShadows,
+  }
 }
 
 async function main(): Promise<void> {
@@ -157,13 +188,13 @@ async function main(): Promise<void> {
       console.log(`Provider ${providerId} (skipped, discovery disabled)`)
       continue
     }
-    const { summary, entries, error } = await auditProvider(providerId, provider)
+    const { summary, entries, relaySafeCount, error } = await auditProvider(providerId, provider)
     const host = hostnameOnly(provider?.options?.baseURL)
     if (error) {
       console.log(`Provider ${providerId} (${host ?? 'unknown'}) - ${error}`)
       continue
     }
-    audited.push({ providerId, summary, entries })
+    audited.push({ providerId, summary, entries, relaySafeCount })
     console.log(`Provider ${providerId} (${host ?? 'unknown'})`)
     console.log(`  Models: ${summary.totalModels}`)
     console.log(`  Reasoning known: ${summary.reasoningModels}`)
@@ -171,6 +202,9 @@ async function main(): Promise<void> {
     console.log(`  Capability unknown: ${summary.capabilityUnknown}`)
     console.log(`  Transport unknown: ${summary.transportUnknown}`)
     console.log(`  Verified: ${summary.verifiedModels} | Resolved: ${summary.resolvedModels} | Not reasoning: ${summary.notReasoning}`)
+    if (relaySafeCount !== undefined) {
+      console.log(`  [relay-aware shadow] safe to compile: ${relaySafeCount} / ${summary.totalModels}`)
+    }
     if (verbose) {
       for (const entry of entries) {
         console.log(`  ${entry.modelId}`)

@@ -1,0 +1,312 @@
+REAL-RELAY-SHADOW-REPORT
+=======================
+Go/No-Go document (design §75) - relay-aware shadow resolution
+Generated against real user providers. No inference sent.
+
+Provider 2chat (2chat.cc)
+  Models: 6
+  codex-auto-review
+    relay=unknown-relay owned_by=none identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.4
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=2 consensus=[{"type":"effort","values":["low","medium","high","xhigh","max"]}] source=models-dev-consensus
+    safe=false reason=models-dev-consensus
+  gpt-5.6-sol
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 6
+
+Provider ans-heidong (www.text168.com)
+  Models: 10
+  claude-fable-5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=18 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-5-20251101
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=7 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-6
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-7
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-8
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-sonnet-5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-sonnet-4-6
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=20 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-sonnet-4-5-20250929
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=8 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-haiku-4-5-20251001
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=11 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 10
+
+Provider dieqiyun (hgapi.dieqiyun.top)
+  Models: 4
+  codex-auto-review
+    relay=unknown-relay owned_by=none identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-sol
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 4
+
+Provider heidong (www.text168.com)
+  Models: 6
+  codex-auto-review
+    relay=unknown-relay owned_by=none identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.4
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4-mini
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-sol
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 6
+
+Provider k3-free - models endpoint failed
+
+Provider openchat (api.openclawplan.com)
+  Models: 26
+  claude-opus-4-6
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-6-thinking
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=1 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-7
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-opus-4-8
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-sonnet-4-6
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=20 consensus=[] source=none
+    safe=false reason=consensus-empty
+  claude-sonnet-5
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gemini-3-flash
+    relay=new-api owned_by=custom identity=advertised-standard-id
+    candidates=4 consensus=[{"type":"effort","values":["low","medium","high"]}] source=models-dev-consensus
+    safe=true reason=models-dev-consensus
+  gemini-3.1-pro-high
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gemini-3.1-pro-low
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gemini-3.1-pro-preview
+    relay=new-api owned_by=custom identity=advertised-standard-id
+    candidates=11 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gemini-3.5-flash
+    relay=new-api owned_by=custom identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gemini-3.6-flash
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=11 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.3-codex
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=11 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4-xhigh
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.5
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.5-xhigh
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.6-luna
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-sol
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-image-2
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=3 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-image-2-vip
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  grok-3
+    relay=new-api owned_by=custom identity=advertised-standard-id
+    candidates=2 consensus=[] source=none
+    safe=false reason=consensus-empty
+  grok-4
+    relay=new-api owned_by=custom identity=advertised-standard-id
+    candidates=4 consensus=[] source=none
+    safe=false reason=consensus-empty
+  grok-420-fast
+    relay=new-api owned_by=custom identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  grok-420-thinking
+    relay=new-api owned_by=custom identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  [relay-aware shadow] safe to compile: 1 / 26
+
+Provider tokenshop (api.tokenshop.homes)
+  Models: 9
+  codex-auto-review
+    relay=unknown-relay owned_by=none identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.3-codex-spark
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=2 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4-mini
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.5
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=2 consensus=[{"type":"effort","values":["low","medium","high","xhigh","max"]}] source=models-dev-consensus
+    safe=false reason=models-dev-consensus
+  gpt-5.6-luna
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-sol
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=unknown-relay owned_by=none identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 9
+
+Provider yunzhouapi (relay.nccnxta.cn)
+  Models: 6
+  codex-auto-review
+    relay=new-api owned_by=openai identity=unknown
+    candidates=0 consensus=[] source=none
+    safe=false reason=missing-candidate-metadata
+  gpt-5.4
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=19 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.4-mini
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.5
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=17 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-sol
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=15 consensus=[] source=none
+    safe=false reason=consensus-empty
+  gpt-5.6-terra
+    relay=new-api owned_by=openai identity=advertised-standard-id
+    candidates=14 consensus=[] source=none
+    safe=false reason=consensus-empty
+  [relay-aware shadow] safe to compile: 0 / 6
+
+=== TOTALS ===
+Models: 67
+Relay-aware safe to compile: 1
+
+NOTE: Current (pre-relay-aware) coverage is 0/82 reasoning known.
+The relay-aware algorithm recovers safe consensus where ALL candidate
+hosts agree. Remaining unknown models have conflicting candidate
+controls (consensus-empty) or no candidate metadata, which is
+correct-conservative: no fabricated variants.

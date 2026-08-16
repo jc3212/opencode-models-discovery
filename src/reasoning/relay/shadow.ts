@@ -120,6 +120,7 @@ export function resolveRelayAware(input: RelayAwareInput): RelayAwareResult {
     npm: input.npm,
     baseURL: input.baseURL,
     modelId,
+    rawModel,
     relayConfig: input.relayConfig,
   })
   const ingress = resolveIngressSurface(relay, { npm: input.npm, baseURL: input.baseURL })

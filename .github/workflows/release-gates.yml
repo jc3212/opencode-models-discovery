@@ -1,0 +1,39 @@
+name: release-gates
+
+on:
+  push:
+    branches: [main, dev]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  release-gates:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node: [20, 22]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ matrix.node }}
+      - uses: oven-sh/setup-bun@v2
+      - run: npm ci
+      - name: Typecheck
+        run: npx tsc --noEmit
+      - name: Lint
+        run: npm run lint
+      - name: Tests
+        run: npm run test:run
+      - name: Registry compile
+        run: npm run registry:compile
+      - name: Generated registry matches source (no drift)
+        run: git diff --exit-code -- src/generated/reasoning-registry.json
+      - name: Package integrity
+        run: npm run test:package
+      - name: Clean install
+        run: npm run test:clean-install
+      - name: Registry diff report (report-only)
+        if: github.event_name == 'workflow_dispatch'
+        run: npm run registry:check || true
+

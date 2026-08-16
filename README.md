@@ -57,6 +57,32 @@ Add the plugin to your `opencode.json`:
 
 On startup, the plugin will query the provider's models endpoint and merge discovered models into the active OpenCode config.
 
+For anonymous relays (New API, Sub2API, custom gateways) that return no
+reasoning metadata, enable the official registry:
+
+```json
+{
+  "modelsDiscovery": {
+    "enabled": true,
+    "reasoning": {
+      "enabled": true,
+      "capabilityPolicy": "official-model",
+      "transport": "openai-compatible-effort"
+    }
+  }
+}
+```
+
+The plugin matches the discovered model id against its bundled official model
+registry and generates the model's real reasoning levels. Run the audit CLI to
+see exactly what resolved and why:
+
+```bash
+npx opencode-models-discovery audit          # per-provider summary
+npx opencode-models-discovery audit --verbose  # per-model detail
+```
+
+
 ### Slow Providers
 
 Discovery requests time out after `3000` milliseconds by default. For a slow local server or gateway, set a larger timeout for that provider:
@@ -253,6 +279,38 @@ When startup-time discovery needs to recover `/connect`-managed API credentials 
 - `MIMOCODE=1`: `~/.local/share/mimocode/auth.json`
 
 This keeps the same provider configuration model while allowing the plugin to work in both OpenCode and Mimocode environments.
+
+
+## Compatibility Matrices
+
+### Transport Matrix
+
+| Transport | Status |
+|-----------|--------|
+| OpenAI Responses | VERIFIED |
+| OpenAI-compatible | VERIFIED |
+| OpenRouter | VERIFIED |
+| Anthropic | VERIFIED |
+| Gemini | VERIFIED |
+| DashScope / Qwen | VERIFIED |
+| Alibaba SDK | VERIFIED |
+| Unknown Relay | CONFIG DEPENDENT |
+
+### Registry Matrix (official model reasoning)
+
+| Vendor | Status |
+|--------|--------|
+| OpenAI / GPT / Codex | covered |
+| Anthropic / Claude | covered |
+| Google / Gemini | covered |
+| Alibaba / Qwen | covered |
+| DeepSeek | covered |
+| Z.AI / GLM | covered |
+| Moonshot / Kimi | covered |
+
+> **OFFICIAL MODEL ≠ RELAY VERIFIED.** Registry entries describe the model's
+> official capability; whether a specific third-party relay actually forwards
+> those controls is reported separately as `Relay Forwarding: UNVERIFIED`.
 
 ## Documentation
 

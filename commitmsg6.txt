@@ -1,0 +1,12 @@
+docs+ci: quick start official-model, matrices, troubleshooting, release gates
+
+Phase 17-19 (design 57-62):
+- README: official-model quick start + audit CLI usage, Transport Matrix +
+  Registry Matrix (OFFICIAL MODEL != RELAY VERIFIED), docs links
+- docs/troubleshooting.md: models absent / no variants / relay unverified /
+  isolation, with audit-driven diagnosis
+- .github/workflows/release-gates.yml: typecheck, lint, tests, registry
+  compile + no-drift diff, package integrity, clean install, Node 20/22,
+  report-only registry diff
+- Full validation green: lint clean, 368 tests, package test (33-model
+  registry, 63 files)

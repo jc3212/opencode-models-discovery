@@ -1,8 +1,13 @@
+import { normalizeReasoningOptions } from './model-info/reasoning-options'
+import type { ReasoningOption } from '../reasoning/types'
+
 export interface ModelsDevModel {
   id: string
   name?: string
   attachment?: boolean
   reasoning?: boolean
+  /** Host-side reasoning controls exposed by the API surface. */
+  reasoning_options?: ReasoningOption[]
   tool_call?: boolean
   structured_output?: boolean
   temperature?: boolean
@@ -43,6 +48,9 @@ function addModel(cache: Map<string, ModelsDevModel>, providerId: string | undef
     name: typeof rawModel.name === 'string' ? rawModel.name : undefined,
     attachment: typeof rawModel.attachment === 'boolean' ? rawModel.attachment : undefined,
     reasoning: typeof rawModel.reasoning === 'boolean' ? rawModel.reasoning : undefined,
+    reasoning_options: rawModel.reasoning_options !== undefined
+      ? normalizeReasoningOptions(rawModel.reasoning_options)
+      : undefined,
     tool_call: typeof rawModel.tool_call === 'boolean' ? rawModel.tool_call : undefined,
     structured_output: typeof rawModel.structured_output === 'boolean' ? rawModel.structured_output : undefined,
     temperature: typeof rawModel.temperature === 'boolean' ? rawModel.temperature : undefined,

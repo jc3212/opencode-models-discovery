@@ -45,6 +45,14 @@ export interface ProviderDiscoveryCacheConfig {
   ttlSeconds?: number
 }
 
+export interface ProviderReasoningConfig {
+  enabled?: boolean
+  /** Explicit reasoning transport: auto | openai-compatible-effort | openrouter | dashscope-chat | anthropic | google | alibaba-sdk */
+  transport?: string
+  /** Map discovered model ids to canonical models for metadata lookup. */
+  aliases?: Record<string, string>
+}
+
 export interface ProviderDiscoveryConfig {
   enabled?: boolean
   endpoint?: string
@@ -60,6 +68,7 @@ export interface ProviderDiscoveryConfig {
   }
   smartModelName?: boolean
   cache?: ProviderDiscoveryCacheConfig
+  reasoning?: ProviderReasoningConfig
 }
 
 export interface DiscoveryConfig {

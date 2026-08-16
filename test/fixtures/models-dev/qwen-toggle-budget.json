@@ -1,0 +1,14 @@
+{
+  "alibaba": {
+    "models": {
+      "qwen3-max": {
+        "id": "qwen3-max",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "toggle" },
+          { "type": "budget_tokens", "min": 1024, "max": 32768 }
+        ]
+      }
+    }
+  }
+}

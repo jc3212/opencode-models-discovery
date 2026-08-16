@@ -1,0 +1,13 @@
+{
+  "openai": {
+    "models": {
+      "gpt-5": {
+        "id": "gpt-5",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "effort", "values": ["none", "low", "medium", "high"] }
+        ]
+      }
+    }
+  }
+}

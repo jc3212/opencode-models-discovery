@@ -1,0 +1,13 @@
+{
+  "google": {
+    "models": {
+      "gemini-3-pro": {
+        "id": "gemini-3-pro",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "effort", "values": ["low", "medium", "high"] }
+        ]
+      }
+    }
+  }
+}

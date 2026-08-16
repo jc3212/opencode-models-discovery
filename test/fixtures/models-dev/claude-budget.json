@@ -1,0 +1,14 @@
+{
+  "anthropic": {
+    "models": {
+      "claude-4-opus": {
+        "id": "claude-4-opus",
+        "reasoning": true,
+        "reasoning_options": [
+          { "type": "toggle" },
+          { "type": "budget_tokens", "min": 1024, "max": 64000 }
+        ]
+      }
+    }
+  }
+}

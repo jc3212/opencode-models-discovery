@@ -1,4 +1,4 @@
-import type { ModelInfoEnricher } from './types'
+import type { ModelInfoEnricher, ReasoningMetadata } from './types'
 import { lookupModelsDevData, type ModelsDevModel } from '../models-dev-fetcher'
 
 function hasUsableNumber(value: unknown): value is number {
@@ -43,6 +43,15 @@ export function createModelsDevModelInfoEnricher(data: unknown): ModelInfoEnrich
     },
     applyModelInfo(modelConfig: any, modelId: string): void {
       applyModelsDevModelInfo(modelConfig, lookupModelsDevData(modelId, cache))
+    },
+    getReasoningMetadata(modelId: string): ReasoningMetadata | undefined {
+      const info = lookupModelsDevData(modelId, cache)
+      if (!info) return undefined
+      return {
+        reasoning: info.reasoning === true,
+        options: info.reasoning_options ?? [],
+        source: 'models.dev',
+      }
     },
   }
 }

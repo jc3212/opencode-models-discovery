@@ -1,0 +1,7 @@
+{
+  "deepseek": {
+    "models": {
+      "deepseek-r1": { "id": "deepseek-r1", "reasoning": true }
+    }
+  }
+}

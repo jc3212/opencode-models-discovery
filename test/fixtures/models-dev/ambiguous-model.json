@@ -1,0 +1,12 @@
+{
+  "provider-a": {
+    "models": {
+      "model-x": { "id": "model-x", "reasoning": true, "reasoning_options": [{ "type": "toggle" }] }
+    }
+  },
+  "provider-b": {
+    "models": {
+      "model-x": { "id": "model-x", "reasoning": true, "reasoning_options": [{ "type": "effort", "values": ["low", "high"] }] }
+    }
+  }
+}

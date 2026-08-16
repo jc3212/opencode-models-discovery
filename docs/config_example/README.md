@@ -18,6 +18,9 @@ Do not paste secrets into public issues or pull requests. Configure provider cre
 
 - [AI-ROUTER](ai-router.md)
 - [DeepSeek](deepseek.md)
+- [Reasoning variants: New API / OpenAI-compatible effort](reasoning-newapi.md)
+- [Reasoning variants: DashScope / Qwen](reasoning-dashscope.md)
+- [Reasoning variants: unknown gateway (conservative)](reasoning-unknown-gateway.md)
 
 ## Community Example PR Scope
 

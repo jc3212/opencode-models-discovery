@@ -6,7 +6,8 @@ import { categorizeModel, formatModelName, extractModelOwner } from '../utils'
 import { normalizeBaseURL, discoverModelsFromProvider, discoverModelInfoFromProvider, canDiscoverModels, isValidModel, DEFAULT_REQUEST_TIMEOUT_MS } from '../utils/openai-compatible-api'
 import { createModelInfoEnricher, isSupportedModelInfoFormat, type ModelInfoEnricher } from '../utils/model-info'
 import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
-import { fetchModelsDevData } from '../utils/models-dev-fetcher'
+import { fetchModelsDevData, type ModelsDevModel } from '../utils/models-dev-fetcher'
+import { applyReasoningEnrichment } from '../reasoning/enricher'
 import { isInventoryFresh, mergeModelOverride, ProviderModelStore, type ProviderModelState } from './provider-model-store'
 import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
@@ -290,13 +291,14 @@ export async function enhanceConfig(
       }
 
       let modelInfoEnricher: ModelInfoEnricher | undefined
+      let modelsDevCache: Map<string, ModelsDevModel> | undefined
       if (!usingPersistedModels && modelInfoFormat && !isSupportedModelInfoFormat(modelInfoFormat)) {
         logger.warn('Unsupported provider model info format', {
           provider: providerName,
           format: modelInfoFormat,
         })
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.ModelsDev) {
-        const modelsDevCache = await fetchModelsDevData()
+        modelsDevCache = await fetchModelsDevData()
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelsDevCache, { filterNonChat })
         logger.info('Loaded models.dev data', {
           provider: providerName,
@@ -379,6 +381,20 @@ export async function enhanceConfig(
           }
 
           modelInfoEnricher?.applyModelInfo(modelConfig, model.id, model)
+
+          if (providerDiscoveryConfig.reasoning?.enabled !== false) {
+            applyReasoningEnrichment({
+              modelConfig,
+              modelId: model.id,
+              providerConfig: p,
+              discoveryConfig: providerDiscoveryConfig,
+              modelsDevIndex: modelsDevCache,
+              providerMetadata: model,
+              outputLimit: modelConfig.limit?.output,
+              log: (message, extra) => logger.info(message, extra),
+            })
+          }
+
           discoveredModels[modelKey] = modelConfig
         }
 

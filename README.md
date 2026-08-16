@@ -18,6 +18,7 @@ Originally inspired by [opencode-lmstudio](https://github.com/nicktasios/opencod
 - Supports provider-level enablement, endpoint overrides, and model filters
 - Supports regex-based model id filtering and raw provider field equality filtering
 - Can enrich model limits and reasoning metadata from provider-specific endpoints
+- Automatically generates conservative, transport-verified reasoning variants (OpenAI-compatible effort, OpenRouter, DashScope/Qwen, Anthropic, Gemini, Alibaba) only when the API surface is known with high confidence; never guesses
 - Supports OpenCode `/connect` credentials for custom providers
 - Optionally caches discovered provider models in plugin-owned XDG data files
 
@@ -256,6 +257,7 @@ This keeps the same provider configuration model while allowing the plugin to wo
 ## Documentation
 
 - Configuration guide: [`docs/configuration.md`](docs/configuration.md)
+- Automatic reasoning variants: [`docs/reasoning.md`](docs/reasoning.md)
 - Persisted model discovery cache: [`docs/persisted-model-discovery.md`](docs/persisted-model-discovery.md)
 - `/connect` credentials and auth-backed discovery: [`docs/connect-and-auth.md`](docs/connect-and-auth.md)
 - Community provider examples: [`docs/config_example/`](docs/config_example/)

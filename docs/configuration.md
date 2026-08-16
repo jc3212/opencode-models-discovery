@@ -49,6 +49,9 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.smartModelName` | `boolean` | Use human-friendly display names instead of raw discovered model ids |
 | `provider.<name>.options.modelsDiscovery.cache.enabled` | `boolean` | Opt in to provider-scoped cached filtered and enriched model configurations; defaults to `false` |
 | `provider.<name>.options.modelsDiscovery.cache.ttlSeconds` | non-negative finite `number` | Cache lifetime in seconds; defaults to `86400` |
+| `provider.<name>.options.modelsDiscovery.reasoning.enabled` | `boolean` | Enable automatic reasoning variant generation for discovered models; defaults to `true`. Set `false` to keep pre-reasoning behavior |
+| `provider.<name>.options.modelsDiscovery.reasoning.transport` | `string` | Explicit reasoning transport: `auto` (default), `openai-compatible-effort`, `openrouter`, `dashscope-chat`, `anthropic`, `google`, `alibaba-sdk`. Only `auto` or a high-confidence profile generates variants |
+| `provider.<name>.options.modelsDiscovery.reasoning.aliases` | `Record<string,string>` | Map discovered model ids to canonical models for reasoning metadata lookup only (never changes the sent model id) |
 
 Recommended approach:
 

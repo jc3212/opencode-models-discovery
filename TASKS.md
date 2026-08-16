@@ -13,6 +13,25 @@ Transform this plugin into a **universal OpenAI-compatible model discovery syste
 
 ---
 
+## Automatic Reasoning Variants (implemented)
+
+A metadata-driven, transport-conservative reasoning enrichment system generates
+OpenCode model.variants for discovered models only when both the reasoning
+capability and the API transport semantics are known with high confidence. See
+docs/reasoning.md for configuration, support matrix, and behavior. Verified
+end-to-end against the real AI SDK packages (wire body capture) and against the
+real OpenCode binary (opencode models --verbose).
+
+- src/reasoning/ - types, canonical resolver, capability resolver, transport
+  resolver, provider profiles, pure variant compiler, transport adapters,
+  diagnostics, and the orchestration enricher.
+- src/utils/model-info/reasoning-options.ts - models.dev reasoning_options
+  normalizer (forward-compatible).
+- Wire-level integration tests: test/wire-integration.test.ts.
+- Enricher orchestration tests: test/reasoning-enricher.test.ts.
+
+---
+
 ## Epic 1: Core Multi-Provider Discovery
 
 ### Phase 1: Provider Detection & Classification

@@ -18,11 +18,18 @@
  */
 
 import { readFileSync, existsSync } from 'fs'
+import { createRequire } from 'node:module'
+const requireBundled = createRequire(import.meta.url)
+function requireBundledRegistry(): unknown {
+  try { return requireBundled('../src/generated/reasoning-registry.json') } catch { return undefined }
+}
 import { join } from 'path'
 import { normalizeBaseURL, discoverModelsFromProvider, isValidModel } from '../src/utils/openai-compatible-api'
 import { fetchModelsDevData } from '../src/utils/models-dev-fetcher'
 import { resolveReasoningForModel } from '../src/reasoning/enricher'
 import { resolveRelayAware } from '../src/reasoning/relay/shadow'
+import { loadRegistry } from '../src/reasoning/registry/loader'
+import { resolveOfficialModelCapability } from '../src/reasoning/registry/resolver'
 import { buildReasoningCoverageReport } from '../src/reasoning/coverage'
 import type { ProviderDiscoveryConfig } from '../src/types/plugin-config'
 import type { ResolvedReasoning } from '../src/reasoning/types'
@@ -121,8 +128,10 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
     return { summary: null, entries: [], error: 'models endpoint failed' }
   }
 
+  const bundledRegistry = loadRegistry(requireBundledRegistry())
   const resolutions: ResolvedReasoning[] = []
   const relayShadows: Array<{ modelId: string; safeToCompile: boolean; reason: string }> = []
+  const registryMatches: Array<{ modelId: string; matched: boolean; source: string }> = []
   const relayConfig = discovery?.reasoning?.relay
   for (const model of result.models.filter(isValidModel)) {
     const resolution = resolveReasoningForModel({
@@ -151,6 +160,17 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
       safeToCompile: shadow.safeToCompile,
       reason: shadow.reason,
     })
+
+    // Official registry coverage (design §56-57): exact/alias match for the
+    // anonymous-relay case under official-model policy.
+    const registryMatch = resolveOfficialModelCapability(model.id, bundledRegistry, {
+      aliases: discovery?.reasoning?.aliases,
+    })
+    registryMatches.push({
+      modelId: model.id,
+      matched: registryMatch !== undefined,
+      source: registryMatch?.source ?? 'none',
+    })
   }
 
   const report = buildReasoningCoverageReport(providerId, resolutions)
@@ -159,12 +179,18 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
   for (const s of relayShadows) {
     relayReasonCounts[s.reason] = (relayReasonCounts[s.reason] ?? 0) + 1
   }
+  const registryExact = registryMatches.filter((m) => m.matched && m.source === 'registry-exact').length
+  const registryAlias = registryMatches.filter((m) => m.matched && m.source === 'registry-alias').length
+  const registryUnknown = registryMatches.filter((m) => !m.matched).length
   return {
     summary: report.summary,
     entries: report.entries,
     relaySafeCount,
     relayReasonCounts,
     relayShadows,
+    registryExact,
+    registryAlias,
+    registryUnknown,
   }
 }
 
@@ -188,13 +214,13 @@ async function main(): Promise<void> {
       console.log(`Provider ${providerId} (skipped, discovery disabled)`)
       continue
     }
-    const { summary, entries, relaySafeCount, error } = await auditProvider(providerId, provider)
+    const { summary, entries, relaySafeCount, registryExact, registryAlias, registryUnknown, error } = await auditProvider(providerId, provider)
     const host = hostnameOnly(provider?.options?.baseURL)
     if (error) {
       console.log(`Provider ${providerId} (${host ?? 'unknown'}) - ${error}`)
       continue
     }
-    audited.push({ providerId, summary, entries, relaySafeCount })
+    audited.push({ providerId, summary, entries, relaySafeCount, registryExact, registryAlias, registryUnknown })
     console.log(`Provider ${providerId} (${host ?? 'unknown'})`)
     console.log(`  Models: ${summary.totalModels}`)
     console.log(`  Reasoning known: ${summary.reasoningModels}`)
@@ -204,6 +230,9 @@ async function main(): Promise<void> {
     console.log(`  Verified: ${summary.verifiedModels} | Resolved: ${summary.resolvedModels} | Not reasoning: ${summary.notReasoning}`)
     if (relaySafeCount !== undefined) {
       console.log(`  [relay-aware shadow] safe to compile: ${relaySafeCount} / ${summary.totalModels}`)
+    }
+    if (registryExact !== undefined) {
+      console.log(`  [official registry] exact: ${registryExact} | alias: ${registryAlias} | unknown: ${registryUnknown}`)
     }
     if (verbose) {
       for (const entry of entries) {

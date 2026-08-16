@@ -204,9 +204,98 @@ The plugin logs one line per reasoning decision:
 When transport is unresolved the line reports `transport=unknown` and
 `variants=none` with the reason.
 
+## What "thinking intensity" means here
+
+This plugin proves that the provider/API accepted and forwarded the requested
+reasoning control (e.g. the request body contains `reasoning_effort: high`). It
+does NOT measure how much compute the model actually spent. Unless the upstream
+response reports reasoning/token usage, the plugin's claim is limited to
+"the reasoning control was sent correctly", not "the model thought exactly X%
+more".
+
 ## Caching
 
 Automatic reasoning resolution is derived from live provider metadata and the
 transport config on every startup, so no separate reasoning cache is needed for
 correctness. The existing persisted model-discovery cache stores the resulting
 `model.variants` exactly as OpenCode will consume them.
+
+## What to Expect (three situations)
+
+### 1. Model + reasoning variants appear automatically
+
+The plugin obtained trustworthy reasoning metadata and a verified transport.
+For example a gpt model with effort metadata on a provider whose surface is
+confirmed OpenAI-compatible:
+
+```json
+{
+  "variants": {
+    "low": { "reasoningEffort": "low" },
+    "medium": { "reasoningEffort": "medium" },
+    "high": { "reasoningEffort": "high" }
+  }
+}
+```
+
+### 2. Model appears but has no reasoning variants
+
+This is usually NOT a bug. One of these holds:
+
+- **Capability metadata is missing** - neither the provider nor models.dev
+  publishes reasoning controls for this model. Nothing trustworthy to compile.
+- **The provider's transport is not confirmed** - we know the model reasons
+  but not how this particular host expects reasoning controls, so nothing
+  unverified is sent.
+
+Use the reasoning coverage audit to tell them apart:
+
+```text
+$ npm run reasoning:audit --verbose
+
+Provider newapi-a
+  Models: 38
+  Reasoning known: 26
+  Variants available: 19
+  Capability unknown: 4
+  Transport unknown: 3
+```
+
+### 3. You configure variants explicitly
+
+Explicit `provider.<id>.models.<model-id>.variants` always win over automatic
+variants. User configuration is never overwritten by the plugin.
+
+## Provider Compatibility Matrix
+
+| Transport | Status | Wire verified | How to enable |
+|-----------|--------|---------------|---------------|
+| OpenAI-compatible effort | **VERIFIED** | yes | `transport: "openai-compatible-effort"` or known profile |
+| DashScope / Qwen | **VERIFIED** | yes | `transport: "dashscope-chat"` |
+| OpenRouter | **VERIFIED** | yes | `transport: "openrouter"` |
+| Anthropic | **VERIFIED** | yes (effort/budget/toggle) | `transport: "anthropic"` |
+| Gemini | **VERIFIED** | yes (level/budget, never both) | `transport: "google"` |
+| Alibaba SDK | **VERIFIED** | yes (camelCase toggle/budget) | `transport: "alibaba-sdk"` |
+| New API / Sub2API relays | **UNKNOWN by default** | n/a | only via explicit `transport` after confirming your instance's channels |
+
+> New API and Sub2API are multi-channel relays: a single instance can route
+> different models through OpenAI, Azure, OpenRouter, or Anthropic channels with
+> different reasoning semantics. The plugin therefore does not register a blanket
+> profile for them. Set an explicit `transport` only after confirming what your
+> instance actually forwards.
+
+## Reasoning Coverage Audit
+
+A read-only, sanitized audit tool reports reasoning coverage per provider
+without sending any inference:
+
+```bash
+npm run reasoning:audit            # summary per provider
+npm run reasoning:audit --verbose  # per-model detail
+```
+
+- Contacts only `/v1/models`, provider metadata endpoints, and the public
+  models.dev catalog.
+- Never prints API keys, Authorization headers, cookies, or tokens.
+- Base URLs are reduced to hostname only.
+

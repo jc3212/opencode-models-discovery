@@ -93,6 +93,41 @@ function normalizeGenericEffortStyle(raw: Record<string, unknown>): ReasoningMet
 }
 
 /**
+ * Sub2API Grok style (design §18): `supportsReasoningEffort` +
+ * `reasoningEffort` (string) or `reasoningEfforts` (array of
+ * { value: "low" } entries). This metadata is emitted by Sub2API itself, so
+ * it is exact provider-native evidence.
+ */
+function normalizeSub2APIGrokStyle(raw: Record<string, unknown>): ReasoningMetadata | undefined {
+  if (raw.supportsReasoningEffort !== true) return undefined
+
+  let values: string[] | undefined
+
+  if (Array.isArray(raw.reasoningEfforts)) {
+    const extracted: string[] = []
+    for (const entry of raw.reasoningEfforts) {
+      if (isObject(entry) && typeof entry.value === 'string' && entry.value.length > 0) {
+        extracted.push(entry.value)
+      }
+    }
+    if (extracted.length > 0) values = extracted
+  }
+
+  if (!values && typeof raw.reasoningEffort === 'string' && raw.reasoningEffort.length > 0) {
+    values = [raw.reasoningEffort]
+  }
+  values ??= pickStringArray(raw.reasoningEffort)
+
+  if (!values) return undefined
+
+  return {
+    reasoning: true,
+    options: [{ type: 'effort', values }],
+    source: 'provider-native',
+  }
+}
+
+/**
  * Normalizes an arbitrary provider-native metadata object into
  * ReasoningMetadata, or `undefined` when nothing recognizable is present.
  */
@@ -117,6 +152,10 @@ export function normalizeProviderNativeReasoningMetadata(value: unknown): Reason
   const lmstudio = normalizeLMStudioStyle(value)
   if (lmstudio) return lmstudio
 
-  // 4. Generic effort arrays.
+  // 4. Sub2API Grok style (exact provider-native evidence).
+  const sub2api = normalizeSub2APIGrokStyle(value)
+  if (sub2api) return sub2api
+
+  // 5. Generic effort arrays.
   return normalizeGenericEffortStyle(value)
 }

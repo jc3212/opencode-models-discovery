@@ -193,4 +193,9 @@ export const modelsDevTestUtils = {
   resetCache(): void {
     modelsDevCache = null
   },
+  /** Inject a fixed catalog for tests (avoids the network). */
+  setCacheData(data: unknown): Map<string, ModelsDevModel> {
+    modelsDevCache = parseModelsDevData(data)
+    return modelsDevCache
+  },
 }

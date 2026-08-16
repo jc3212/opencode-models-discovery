@@ -21,6 +21,12 @@ export interface ProviderModelState {
   fetchedAt: string
   models: Record<string, Record<string, unknown> & { id: string }>
   overrides?: Record<string, ProviderModelOverride>
+  /**
+   * Fingerprint of the reasoning config + metadata that produced the cached
+   * automatic variants. When the current fingerprint differs, cached
+   * automatic variants are stale and are stripped on read.
+   */
+  reasoningFingerprint?: string
 }
 
 function isPlainObject(value: unknown): value is Record<string, unknown> {
@@ -47,6 +53,10 @@ function isProviderModelState(value: unknown): value is ProviderModelState {
     typeof value.fetchedAt !== 'string' || !Number.isFinite(Date.parse(value.fetchedAt)) ||
     !isPlainObject(value.models) || !Object.entries(value.models).every(([modelID, model]) =>
       modelID.length > 0 && isValidModel(model) && model.id === modelID)) {
+    return false
+  }
+
+  if (value.reasoningFingerprint !== undefined && typeof value.reasoningFingerprint !== 'string') {
     return false
   }
 
@@ -117,7 +127,8 @@ export class ProviderModelStore {
   async saveModels(
     identity: ProviderModelStoreIdentity,
     models: Record<string, Record<string, unknown> & { id: string }>,
-    previousState?: ProviderModelState
+    previousState?: ProviderModelState,
+    reasoningFingerprint?: string
   ): Promise<boolean> {
     const statePath = this.getStatePath(identity.id)
     if (!statePath) {
@@ -132,6 +143,7 @@ export class ProviderModelStore {
       ...(previousState?.overrides && Object.keys(previousState.overrides).length > 0
         ? { overrides: previousState.overrides }
         : {}),
+      ...(reasoningFingerprint !== undefined ? { reasoningFingerprint } : {}),
     }
     const temporaryPath = path.join(path.dirname(statePath), `.${path.basename(statePath)}.${process.pid}.${Date.now()}.tmp`)
 

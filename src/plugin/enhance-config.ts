@@ -8,11 +8,12 @@ import { createModelInfoEnricher, isSupportedModelInfoFormat, type ModelInfoEnri
 import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
 import { fetchModelsDevData, type ModelsDevModel } from '../utils/models-dev-fetcher'
 import { applyReasoningEnrichment } from '../reasoning/enricher'
+import { computeReasoningFingerprint, computeMetadataSignature } from '../reasoning/cache-fingerprint'
 import { isInventoryFresh, mergeModelOverride, ProviderModelStore, type ProviderModelState } from './provider-model-store'
 import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
 import type { OpenAIModel } from '../types'
-import type { PluginConfig } from '../types/plugin-config'
+import type { PluginConfig, ProviderDiscoveryConfig } from '../types/plugin-config'
 
 interface DiscoveredProvider {
   name: string
@@ -65,9 +66,77 @@ function replaceInjectedModels(config: object, providerID: string, models: Recor
   providers.set(providerID, new Map(Object.entries(models)))
 }
 
+/**
+ * Automatic reasoning variants are derived data: they depend on the current
+ * reasoning config and metadata. They must never be trusted from a persisted
+ * cache if the fingerprint that produced them has changed. This strips them
+ * from cached model configs.
+ */
+function stripAutomaticVariants(models: Record<string, any>): Record<string, any> {
+  return Object.fromEntries(Object.entries(models).map(([modelID, model]) => {
+    if (!model || typeof model !== 'object' || !('variants' in model)) {
+      return [modelID, model]
+    }
+    const { variants: _ignored, ...rest } = model as { variants?: unknown } & Record<string, any>
+    return [modelID, rest]
+  }))
+}
+
 function getExplicitModels(config: object, providerID: string, models: Record<string, any>): Record<string, any> {
   const injectedModels = getInjectedModels(config, providerID)
   return Object.fromEntries(Object.entries(models).filter(([modelID, model]) => injectedModels.get(modelID) !== model))
+}
+
+/**
+ * Computes the current reasoning fingerprint for a provider, used to detect
+ * stale automatic variants in the persisted cache (design §9).
+ *
+ * The fingerprint captures the reasoning config, the metadata source, and a
+ * signature of the models.dev catalog content. When it differs from the value
+ * stored with a cached inventory, the cached automatic variants are stale and
+ * are stripped before injection.
+ */
+async function computeCurrentReasoningFingerprint(
+  providerDiscoveryConfig: ProviderDiscoveryConfig
+): Promise<string | undefined> {
+  let metadataSignature: string | undefined
+  if (providerDiscoveryConfig.modelInfoFormat === ModelInfoFormat.ModelsDev) {
+    const cache = await fetchModelsDevData()
+    metadataSignature = computeMetadataSignature(cache)
+  }
+  return computeReasoningFingerprint({
+    reasoningConfig: providerDiscoveryConfig.reasoning,
+    modelInfoFormat: providerDiscoveryConfig.modelInfoFormat,
+    metadataSignature,
+  })
+}
+
+/**
+ * Strips automatic reasoning variants from a cached inventory when the
+ * fingerprint that produced them no longer matches the current configuration
+ * or metadata. Returns a new model map; the cached file is left untouched so a
+ * later refresh rewrites it with fresh variants.
+ */
+async function invalidateStaleReasoningVariants(
+  providerDiscoveryConfig: ProviderDiscoveryConfig,
+  persistedState: ProviderModelState,
+  discoveredModels: Record<string, any>,
+  logger: PluginLogger
+): Promise<Record<string, any>> {
+  const currentFingerprint = await computeCurrentReasoningFingerprint(providerDiscoveryConfig)
+  const storedFingerprint = persistedState.reasoningFingerprint
+
+  if (currentFingerprint === storedFingerprint) {
+    return discoveredModels
+  }
+
+  const stripped = stripAutomaticVariants(discoveredModels)
+  logger.debug('Stale automatic reasoning variants stripped from cached inventory', {
+    provider: persistedState.provider.id,
+    storedFingerprint: storedFingerprint ?? null,
+    currentFingerprint: currentFingerprint ?? null,
+  })
+  return stripped
 }
 
 async function getResolvedProvidersByID(
@@ -259,6 +328,12 @@ export async function enhanceConfig(
         if (persistedState && isInventoryFresh(persistedState, ttlSeconds)) {
           discoveredModels = persistedState.models
           usingPersistedModels = true
+          discoveredModels = await invalidateStaleReasoningVariants(
+            providerDiscoveryConfig,
+            persistedState,
+            discoveredModels,
+            logger.child({ category: 'reasoning' }),
+          )
         } else {
           apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
           const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs)
@@ -398,8 +473,11 @@ export async function enhanceConfig(
           discoveredModels[modelKey] = modelConfig
         }
 
-        if (cacheEnabled && !await currentProviderModelStore.saveModels(cacheIdentity, discoveredModels, persistedState)) {
-          logger.debug('Could not persist discovered provider models', { provider: providerName })
+        if (cacheEnabled) {
+          const reasoningFingerprint = await computeCurrentReasoningFingerprint(providerDiscoveryConfig)
+          if (!await currentProviderModelStore.saveModels(cacheIdentity, discoveredModels, persistedState, reasoningFingerprint)) {
+            logger.debug('Could not persist discovered provider models', { provider: providerName })
+          }
         }
       }
 

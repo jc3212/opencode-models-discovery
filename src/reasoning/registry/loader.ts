@@ -10,7 +10,7 @@ import { REGISTRY_SCHEMA_VERSION } from './types'
  * corrupt registry never breaks discovery.
  */
 
-// eslint-disable-next-line @typescript-eslint/no-var-requires
+ 
 let bundled: ReasoningRegistry | undefined
 
 export function getBundledRegistry(): ReasoningRegistry | undefined {

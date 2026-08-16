@@ -25,8 +25,8 @@ export interface ProviderProfile {
   evidence: ProfileEvidence[]
 }
 
-const DASHSCOPE_BASE_URL = /(^|[\./])dashscope(\.|\/|$)/i
-const DASHSCOPE_INTL_BASE_URL = /(^|[\./])dashscope-intl(\.|\/|$)/i
+const DASHSCOPE_BASE_URL = /(^|[./])dashscope(\.|\/|$)/i
+const DASHSCOPE_INTL_BASE_URL = /(^|[./])dashscope-intl(\.|\/|$)/i
 
 export const KNOWN_PROVIDER_PROFILES: ProviderProfile[] = [
   {
@@ -71,7 +71,7 @@ export const KNOWN_PROVIDER_PROFILES: ProviderProfile[] = [
   },
   {
     id: 'dashscope-provider-id',
-    match: { providerId: /(^|[\/._-])dashscope([\/._-]|$)/i },
+    match: { providerId: /(^|[/._-])dashscope([/._-]|$)/i },
     transport: 'dashscope-chat',
     confidence: 'high',
     evidence: [

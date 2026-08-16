@@ -1,5 +1,4 @@
 import type { OfficialReasoningCapability, ReasoningRegistry } from './types'
-import { loadRegistry } from './loader'
 
 /**
  * Official registry resolver (design §53, §14-15).

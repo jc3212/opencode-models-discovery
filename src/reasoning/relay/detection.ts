@@ -1,4 +1,4 @@
-import type { RelayDetection, RelayKind, RelayResolutionInput } from './types'
+import type { RelayDetection, RelayResolutionInput } from './types'
 
 /**
  * Conservative relay detection (design §15-17).
@@ -8,8 +8,8 @@ import type { RelayDetection, RelayKind, RelayResolutionInput } from './types'
  * so no relay-specific logic runs without confidence.
  */
 
-const NEW_API_PROVIDER_IDS = /(^|[\/._-])new-?api([\/._-]|$)/i
-const SUB2API_PROVIDER_IDS = /(^|[\/._-])sub-?2-?api([\/._-]|$)/i
+const NEW_API_PROVIDER_IDS = /(^|[/._-])new-?api([/._-]|$)/i
+const SUB2API_PROVIDER_IDS = /(^|[/._-])sub-?2-?api([/._-]|$)/i
 const NEW_API_HEADER = /x-new-api|x-one-api/i
 const SUB2API_HEADER = /sub2api/i
 

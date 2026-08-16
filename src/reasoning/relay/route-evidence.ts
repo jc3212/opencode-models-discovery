@@ -33,11 +33,6 @@ function normalizeHostName(value: string | undefined): string | undefined {
   return KNOWN_HOST_SLUGS[lower] ?? lower
 }
 
-function collectEndpointTypeSignals(supportedEndpointTypes: string[] | undefined): string[] {
-  if (!Array.isArray(supportedEndpointTypes)) return []
-  return supportedEndpointTypes.filter((t): t is string => typeof t === 'string' && t.length > 0)
-}
-
 /**
  * Builds route evidence for a model. `possibleHosts` is the set of hosts the
  * relay could plausibly route to; `preferredHost` is the ranked leader when
@@ -49,11 +44,6 @@ export function resolveRouteEvidence(
 ): RouteEvidence {
   const raw = input.rawModel ?? {}
   const ownedBy = typeof raw.owned_by === 'string' && raw.owned_by.length > 0 ? raw.owned_by : undefined
-  const supportedEndpointTypes = Array.isArray(raw.supported_endpoint_types)
-    ? (raw.supported_endpoint_types as unknown[]).filter((v): v is string => typeof v === 'string')
-    : undefined
-
-  const signals = collectEndpointTypeSignals(supportedEndpointTypes)
   const preferredHost = normalizeHostName(ownedBy)
 
   // Possible hosts: prefer the relay's own hint, fall back to the model id's

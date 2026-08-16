@@ -46,9 +46,6 @@ function pickOptions(canonical: CanonicalModelResolution | undefined, options: R
   if (options.length === 0) {
     return { options: [], confidence: 'none' }
   }
-  const hasEffort = options.some((o) => o.type === 'effort')
-  const hasToggle = options.some((o) => o.type === 'toggle')
-  const hasBudget = options.some((o) => o.type === 'budget_tokens')
 
   let confidence: ReasoningCapabilityConfidence = 'high'
   if (canonical?.confidence === 'exact') confidence = 'exact'

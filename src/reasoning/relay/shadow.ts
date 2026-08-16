@@ -9,7 +9,6 @@ import { resolveRouteEvidence, resolveIngressSurface } from './route-evidence'
 import { resolveCapabilityConsensus } from '../consensus'
 import type { ReasoningOption } from '../types'
 import type { ModelsDevModel } from '../../utils/models-dev-fetcher'
-import { lookupModelsDevData } from '../../utils/models-dev-fetcher'
 
 /**
  * Relay-aware reasoning resolution (design §80).
@@ -174,8 +173,6 @@ export function resolveRelayAware(input: RelayAwareInput): RelayAwareResult {
   }))
   const consensus = resolveCapabilityConsensus(candidates)
 
-  const isStandardId = /^[a-z0-9][a-z0-9._-]*([\/][a-z0-9][a-z0-9._-]*)?$/i.test(modelId) &&
-    !/^(vip-|custom-|my-|coding-|claude-coding|model-)/.test(modelId)
 
   return {
     modelId,

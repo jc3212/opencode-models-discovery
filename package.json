@@ -20,7 +20,7 @@
     "test:run": "vitest run",
     "test:coverage": "vitest run --coverage",
     "test:watch": "vitest watch",
-    "lint": "eslint src --ext .ts",
+    "lint": "eslint src",
     "lint:fix": "eslint src --ext .ts --fix",
     "build": "npm run typecheck && npm run test:run",
     "validate": "npm run lint && npm run typecheck && npm run test:run",
@@ -64,6 +64,7 @@
     "@ai-sdk/google": "^4.0.44",
     "@ai-sdk/openai": "^4.0.42",
     "@ai-sdk/openai-compatible": "^3.0.30",
+    "@eslint/js": "^9.39.5",
     "@opencode-ai/plugin": "^1.17.10",
     "@openrouter/ai-sdk-provider": "^3.0.0",
     "@types/node": "^25.0.3",
@@ -71,6 +72,7 @@
     "ai": "^7.0.66",
     "eslint": "^9.39.2",
     "typescript": "^5.9.3",
+    "typescript-eslint": "^8.67.0",
     "vitest": "^4.0.16"
   }
 }

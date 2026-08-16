@@ -329,7 +329,7 @@ export async function enhanceConfig(
       }
 
       let baseURL: string
-      let displayName = providerName
+      const displayName = providerName
 
       if (p.options?.baseURL) {
         baseURL = normalizeBaseURL(p.options.baseURL)
@@ -438,7 +438,6 @@ export async function enhanceConfig(
       }
 
       const existingModels = getExplicitModels(config, providerName, p.models || {})
-      let chatModelsCount = 0
       const reasoningResolutions: ResolvedReasoning[] = []
 
       const hasProviderModelRegexFilter = !!providerDiscoveryConfig.models?.includeRegex?.length || !!providerDiscoveryConfig.models?.excludeRegex?.length
@@ -477,7 +476,6 @@ export async function enhanceConfig(
           }
 
           if (modelType === 'chat') {
-            chatModelsCount++
             modelConfig.modalities = {
               input: ["text"],
               output: ["text"]

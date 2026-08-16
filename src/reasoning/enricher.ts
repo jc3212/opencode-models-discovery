@@ -170,7 +170,7 @@ export function applyReasoningEnrichment(input: ReasoningEnricherInput): Reasoni
     return { applied: false }
   }
 
-  const { variants, transport, capability, model } = resolution
+  const { variants } = resolution
 
   if (Object.keys(variants).length > 0) {
     input.modelConfig.variants = variants

@@ -2,7 +2,6 @@ import type {
   CanonicalModelResolution,
   ReasoningCapability,
   TransportResolution,
-  ReasoningTransportType,
 } from './types'
 import {
   matchKnownProviderProfile,

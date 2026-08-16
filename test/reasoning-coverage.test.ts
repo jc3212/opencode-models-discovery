@@ -71,10 +71,20 @@ describe('reasoning coverage classification', () => {
 
   it('classifies a confirmed non-reasoning model as NOT_REASONING', () => {
     const entry = classifyReasoningEntry('prov', makeResolution({
-      capability: { reasoning: false, options: [], source: 'none', confidence: 'none' },
+      capability: { reasoning: false, options: [], source: 'models.dev', confidence: 'exact' },
       variants: {},
     }))
     expect(entry.status).toBe('NOT_REASONING')
+  })
+
+  it('classifies an unresolved model as CAPABILITY_UNKNOWN, not NOT_REASONING', () => {
+    // No metadata at all: source 'none' means unresolved, distinct from a
+    // confirmed reasoning=false.
+    const entry = classifyReasoningEntry('prov', makeResolution({
+      capability: { reasoning: false, options: [], source: 'none', confidence: 'none' },
+      variants: {},
+    }))
+    expect(entry.status).toBe('CAPABILITY_UNKNOWN')
   })
 
   it('honors explicit wireVerified override', () => {
@@ -107,9 +117,9 @@ describe('reasoning coverage report', () => {
         transport: { transport: 'unknown', confidence: 'none', reason: 'host-api-surface-unresolved', safeToCompile: false },
         variants: {},
       }),
-      makeResolution({ // NOT_REASONING
-        model: { discoveredModelId: 'embedding-model', source: 'none', confidence: 'none' },
-        capability: { reasoning: false, options: [], source: 'none', confidence: 'none' },
+      makeResolution({ // NOT_REASONING (confirmed by metadata)
+        model: { discoveredModelId: 'embedding-model', source: 'exact', confidence: 'exact' },
+        capability: { reasoning: false, options: [], source: 'models.dev', confidence: 'exact' },
         transport: { transport: 'unknown', confidence: 'none', reason: 'host-api-surface-unresolved', safeToCompile: false },
         variants: {},
       }),

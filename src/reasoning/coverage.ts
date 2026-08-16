@@ -60,8 +60,8 @@ export function classifyReasoningEntry(
   const { model, capability, transport, variants } = resolution
   const variantKeys = Object.keys(variants)
 
-  // Model explicitly known to not reason.
-  if (capability.source === 'none' && capability.reasoning === false) {
+  // Model explicitly confirmed to not reason (metadata says reasoning=false).
+  if (capability.reasoning === false && capability.source !== 'none') {
     return {
       providerId,
       modelId: model.discoveredModelId,
@@ -74,7 +74,8 @@ export function classifyReasoningEntry(
     }
   }
 
-  // Capability unknown: model discovered, no reliable reasoning metadata.
+  // Capability unknown: model discovered, no reliable reasoning metadata
+  // (or metadata unresolved). Distinct from confirmed NOT_REASONING.
   if (!capability.reasoning || (capability.options.length === 0 && capability.confidence === 'none')) {
     return {
       providerId,

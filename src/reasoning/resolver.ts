@@ -30,6 +30,18 @@ const NONE_CAPABILITY: ReasoningCapability = {
   confidence: 'none',
 }
 
+/** Confirmed NOT reasoning: models.dev explicitly says reasoning=false. */
+function confirmedNotReasoning(canonical: CanonicalModelResolution | undefined): ReasoningCapability {
+  return {
+    reasoning: false,
+    options: [],
+    source: 'models.dev',
+    confidence: 'exact',
+    canonicalModelId: canonical?.canonicalModelId,
+    evidence: [{ source: 'models.dev', confidence: 'exact', detail: 'models.dev reports reasoning=false' }],
+  }
+}
+
 function pickOptions(canonical: CanonicalModelResolution | undefined, options: ReasoningOption[], source: ReasoningCapabilitySource): { options: ReasoningOption[]; confidence: ReasoningCapabilityConfidence } {
   if (options.length === 0) {
     return { options: [], confidence: 'none' }
@@ -87,11 +99,9 @@ export function resolveReasoningCapability(input: ReasoningCapabilityInput): Rea
 
   // 2. models.dev metadata.
   if (modelsDevModel) {
-    if (modelsDevModel.reasoning !== true && modelsDevModel.reasoning_options?.length) {
-      return NONE_CAPABILITY
-    }
     if (modelsDevModel.reasoning !== true) {
-      return NONE_CAPABILITY
+      // Confirmed non-reasoning (distinct from unresolved).
+      return confirmedNotReasoning(canonical)
     }
     const options = modelsDevModel.reasoning_options ?? []
     const picked = pickOptions(canonical, options, 'models.dev')

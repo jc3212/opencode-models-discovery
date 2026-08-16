@@ -185,6 +185,27 @@ export function resolveCanonicalModel(input: ResolveCanonicalInput): CanonicalMo
     }
   }
   if (uniqueMatches.length > 1) {
+    // Design §17: when the model id matches several hosts but every host
+    // exposes the SAME NON-EMPTY reasoning_options, the capability evidence
+    // is safe to use even though no single canonical id wins. This is NOT a
+    // guess: the controls are identical across all candidates. Empty
+    // controls stay ambiguous (nothing safe to derive).
+    const firstControls = uniqueMatches[0]!.reasoning_options ?? []
+    const sameReasoningControls = firstControls.length > 0 &&
+      uniqueMatches.every(
+        (candidate) => JSON.stringify(candidate.reasoning_options ?? []) === JSON.stringify(firstControls),
+      )
+    if (sameReasoningControls) {
+      const first = uniqueMatches[0]!
+      return {
+        discoveredModelId: modelId,
+        canonicalModelId: first.id,
+        canonicalProviderId: splitModelId(first.id).provider,
+        source: 'unique-model-id',
+        confidence: 'medium',
+        ambiguous: true,
+      }
+    }
     return {
       discoveredModelId: modelId,
       canonicalModelId: undefined,

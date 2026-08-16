@@ -48,6 +48,25 @@ function loadJson(filePath: string): any {
   return undefined
 }
 
+/**
+ * Resolves a provider API key from the OpenCode /connect auth store, exactly
+ * like the plugin's getProviderApiKey. The key is used only for the read-only
+ * discovery request and is NEVER printed.
+ */
+function resolveApiKey(providerId: string, provider: any): string | undefined {
+  const explicit = provider?.options?.apiKey
+  if (typeof explicit === 'string' && explicit.trim().length > 0) {
+    return explicit
+  }
+  const home = process.env.HOME || ''
+  const auth = loadJson(join(home, '.local/share/opencode/auth.json'))
+  const entry = auth?.[providerId] ?? auth?.[providerId.replace(/\/+$/, '')]
+  if (entry?.type === 'api' && typeof entry.key === 'string' && entry.key.length > 0) {
+    return entry.key
+  }
+  return undefined
+}
+
 function collectConfigs(): any[] {
   const configs: any[] = []
   const home = process.env.HOME || ''
@@ -71,7 +90,13 @@ function mergeProviders(configs: any[]): Record<string, any> {
 
 function isDiscoveryEnabled(provider: any): boolean {
   const discovery: ProviderDiscoveryConfig | undefined = provider?.options?.modelsDiscovery
-  return discovery?.enabled === true || (discovery && discovery.enabled !== false && provider?.npm === '@ai-sdk/openai-compatible')
+  // Mirror the plugin's real behavior: discovery defaults to enabled for any
+  // OpenAI-compatible provider (npm or /v1 URL), unless explicitly disabled.
+  if (discovery?.enabled === false) return false
+  if (discovery?.enabled === true) return true
+  if (!provider?.options?.baseURL) return false
+  return provider?.npm === '@ai-sdk/openai-compatible' ||
+    /\/v1(\/|$)/.test(provider?.options?.baseURL || '')
 }
 
 async function auditProvider(providerId: string, provider: any): Promise<{ summary: any; entries: any[]; error?: string }> {
@@ -82,7 +107,7 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
   }
 
   const modelsDevIndex = await fetchModelsDevData()
-  const apiKey = typeof provider?.options?.apiKey === 'string' ? provider.options.apiKey : undefined
+  const apiKey = resolveApiKey(providerId, provider)
 
   const result = await discoverModelsFromProvider(
     baseURL,

@@ -35,7 +35,8 @@
     "release": "bun scripts/release.ts",
     "prepublishOnly": "npm run build",
     "test:clean-install": "bun scripts/test-clean-install.ts",
-    "test:cli-bunless": "bash scripts/test-cli-bunless.sh"
+    "test:cli-bunless": "bash scripts/test-cli-bunless.sh",
+    "registry:sync-models-dev": "bun scripts/registry-tools/sync-models-dev.ts"
   },
   "keywords": [
     "opencode",

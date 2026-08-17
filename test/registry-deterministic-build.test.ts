@@ -42,7 +42,7 @@ describe('registry deterministic build', () => {
     const { readdirSync } = require('node:fs') as typeof import('node:fs')
     const { join } = require('node:path') as typeof import('node:path')
     const sourceIds = new Set<string>()
-    for (const vendor of readdirSync('registry', { withFileTypes: true }).filter((d) => d.isDirectory())) {
+    for (const vendor of readdirSync('registry', { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'upstream')) {
       const dir = join('registry', vendor.name)
       for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
         const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))

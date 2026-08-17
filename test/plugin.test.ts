@@ -67,7 +67,7 @@ describe('ModelDiscovery Plugin', () => {
   let cacheRoot: string
 
   beforeEach(async () => {
-    mockFetch.mockClear()
+    mockFetch.mockReset()
     modelsDevTestUtils.resetCache()
     delete process.env.OPENCODE_AUTH_CONTENT
     delete process.env.OPENCODE
@@ -672,7 +672,7 @@ describe('ModelDiscovery Plugin', () => {
           },
         },
       }
-      mockFetch.mockClear()
+      mockFetch.mockReset()
       await pluginHooks.config(secondConfig)
 
       expect(secondConfig.provider.cached.models['chat-model'].limit).toEqual({ context: 32768, output: 32768 })
@@ -1254,6 +1254,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should enrich models from models.dev when explicitly configured as model info format', async () => {
+      modelsDevTestUtils.setCacheData({ openai: { models: { 'gpt-4o': { id: 'gpt-4o', attachment: true, reasoning: false, tool_call: true, structured_output: true, temperature: true, modalities: { input: ['text', 'image'], output: ['text'] }, limit: { context: 128000, output: 16384 } } } } })
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
@@ -1308,11 +1309,8 @@ describe('ModelDiscovery Plugin', () => {
 
       await pluginHooks.config(config)
 
-      expect(mockFetch).toHaveBeenCalledTimes(2)
+      expect(mockFetch).toHaveBeenCalledTimes(1)
       expect(mockFetch).toHaveBeenNthCalledWith(1, 'https://api.openai.com/v1/models', expect.objectContaining({
-        method: 'GET'
-      }))
-      expect(mockFetch).toHaveBeenNthCalledWith(2, 'https://models.dev/api.json', expect.objectContaining({
         method: 'GET'
       }))
       expect(config.provider.openai.models['openai/gpt-4o']).toEqual(expect.objectContaining({
@@ -1336,6 +1334,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should use models.dev display names for custom provider smart names', async () => {
+      modelsDevTestUtils.setCacheData({ openai: { models: { 'gpt-4o': { id: 'gpt-4o', name: 'GPT-4o', tool_call: true, limit: { context: 128000 } } } } })
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
@@ -1389,6 +1388,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should keep raw ids when models.dev has names but smart model names are disabled', async () => {
+      modelsDevTestUtils.setCacheData({ openai: { models: { 'gpt-4o': { id: 'gpt-4o', name: 'GPT-4o', tool_call: true } } } })
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
@@ -1439,6 +1439,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should continue discovery when models.dev metadata cannot be fetched', async () => {
+      modelsDevTestUtils.setCacheData(new Map())
       mockFetch
         .mockResolvedValueOnce({
           ok: true,
@@ -1475,6 +1476,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should skip embedding models even when model info is missing', async () => {
+      modelsDevTestUtils.setCacheData(new Map())
       mockFetch.mockResolvedValueOnce({
         ok: true,
         json: async () => ({
@@ -1518,6 +1520,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should merge discovered models with existing config', async () => {
+      modelsDevTestUtils.setCacheData(new Map())
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -1552,6 +1555,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should keep raw model ids by default', async () => {
+      modelsDevTestUtils.setCacheData(new Map())
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -1583,6 +1587,7 @@ describe('ModelDiscovery Plugin', () => {
     })
 
     it('should apply smart formatting when enabled', async () => {
+      modelsDevTestUtils.setCacheData(new Map())
       mockFetch.mockResolvedValue({
         ok: true,
         json: async () => ({
@@ -2549,7 +2554,7 @@ describe('ModelDiscovery Plugin', () => {
       }
 
       await pluginHooks.config(config)
-      mockFetch.mockClear()
+      mockFetch.mockReset()
       const cachedConfig: any = {
         provider: {
           lmstudio: {

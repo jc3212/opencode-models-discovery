@@ -1,16 +1,17 @@
 #!/usr/bin/env bun
 /**
- * Registry compiler (design §28, §33).
+ * Registry compiler (design §28, §33, G2/G4.1).
  *
  * Reads source registry JSON files under `registry/<vendor>/*.json`, each
- * holding one OfficialReasoningCapability, validates the whole set, and
- * writes the generated bundled registry to
- * `src/generated/reasoning-registry.json`.
+ * holding one OfficialReasoningCapability, validates the whole set, writes
+ * the generated bundled registry to src/generated/reasoning-registry.json,
+ * and embeds the models.dev snapshot (G4.1) into
+ * src/generated/models-dev-snapshot.json.
  *
  * Usage: bun scripts/registry-tools/compile-registry.ts
  */
 
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'fs'
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'fs'
 import { createHash } from 'node:crypto'
 import { join } from 'path'
 import type { OfficialReasoningCapability, ReasoningRegistry } from '../../src/reasoning/registry/types'
@@ -31,7 +32,7 @@ const OUT_FILE = join(OUT_DIR, 'reasoning-registry.json')
 export function findUnregisteredVendorDirs(registryRoot: string, vendorDirs: string[]): string[] {
   if (!existsSync(registryRoot)) return []
   return readdirSync(registryRoot, { withFileTypes: true })
-    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.') && d.name !== 'upstream')
     .map((d) => d.name)
     .filter((name) => !vendorDirs.includes(name))
 }
@@ -56,7 +57,7 @@ function collectEntries(): OfficialReasoningCapability[] {
 function contentHash(models: OfficialReasoningCapability[]): string {
   // Deterministic: hash of the canonical + controls of every entry, sorted.
   // registryVersion is derived from content so the build is deterministic
-  // (design §38) AND any content change invalidates cached variants (§37).
+  // AND any content change invalidates cached variants.
   const digest = createHash('sha256')
   const parts = models
     .map((m) => m.model + ':' + JSON.stringify(m.controls) + ':' + JSON.stringify(m.aliases ?? []))
@@ -105,7 +106,35 @@ function main(): void {
     _notice: 'GENERATED FILE - DO NOT EDIT DIRECTLY. Source: registry/*.json. Run: npm run registry:compile',
   }
   writeFileSync(OUT_FILE, JSON.stringify({ ...header, ...registry }, null, 2) + '\n')
-  console.log(`[registry-compile] wrote ${OUT_FILE} with ${entries.length} models (version ${registryVersion})`)
+  console.log('[registry-compile] wrote ' + OUT_FILE + ' with ' + entries.length + ' models (version ' + registryVersion + ')')
+
+  embedModelsDevSnapshot()
+}
+
+/**
+ * G4.1 - embeds the normalized models.dev snapshot into src/generated so the
+ * runtime reads a bundled file and never contacts models.dev (G4 §3.4).
+ * Fails closed if the snapshot and lock do not match (a half-written sync).
+ */
+function embedModelsDevSnapshot(): void {
+  const upstream = join(ROOT, 'registry', 'upstream')
+  const snapshotFile = join(upstream, 'models-dev.snapshot.json')
+  const lockFile = join(upstream, 'models-dev.lock.json')
+  if (!existsSync(snapshotFile)) {
+    console.log('[registry-compile] no models.dev snapshot; skipped embed')
+    return
+  }
+  if (existsSync(lockFile)) {
+    const lock = JSON.parse(readFileSync(lockFile, 'utf8')) as { snapshotSha256?: string }
+    const actual = createHash('sha256').update(readFileSync(snapshotFile, 'utf8')).digest('hex')
+    if (lock.snapshotSha256 && lock.snapshotSha256 !== actual) {
+      console.error('[registry-compile] FAIL: models-dev snapshot hash does not match lock (half-written sync?). Run registry:sync-models-dev.')
+      process.exit(1)
+    }
+  }
+  const outFile = join(OUT_DIR, 'models-dev-snapshot.json')
+  copyFileSync(snapshotFile, outFile)
+  console.log('[registry-compile] embedded models.dev snapshot -> ' + outFile)
 }
 
 main()

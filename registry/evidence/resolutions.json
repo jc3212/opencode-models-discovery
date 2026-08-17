@@ -11,7 +11,7 @@
       "mdOnlyValues": [
         "none"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -21,7 +21,7 @@
       "mdOnlyValues": [
         "none"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -31,7 +31,7 @@
       "mdOnlyValues": [
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -41,7 +41,7 @@
       "mdOnlyValues": [
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -51,7 +51,7 @@
       "mdOnlyValues": [
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -61,7 +61,7 @@
       "mdOnlyValues": [
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -71,7 +71,7 @@
       "mdOnlyValues": [
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -81,7 +81,7 @@
       "mdOnlyValues": [
         "minimal"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -91,7 +91,7 @@
       "mdOnlyValues": [
         "minimal"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -101,7 +101,7 @@
       "mdOnlyValues": [
         "minimal"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -112,7 +112,7 @@
         "none",
         "xhigh"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
@@ -122,28 +122,49 @@
       "mdOnlyValues": [
         "max"
       ],
-      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"
     },
     {
       "model": "xai/grok-3",
       "kind": "flag-conflict",
       "prefer": "official-exact",
-      "reason": "official curated capability (G1-G3 verified) is authoritative; models.dev provider observation of reasoning=false conflicts and is treated as a provider-serving observation only",
+      "reason": "relay provider observation (models.dev) conflicts with official curated capability; official authoritative, observation recorded in models-dev evidence only",
       "resolvedAt": "2026-08-17"
     },
     {
       "model": "alibaba/qwen3-max",
       "kind": "flag-conflict",
       "prefer": "official-exact",
-      "reason": "official curated capability (G1-G3 verified) is authoritative; models.dev provider observation of reasoning=false conflicts and is treated as a provider-serving observation only",
+      "reason": "relay provider observation (models.dev) conflicts with official curated capability; official authoritative, observation recorded in models-dev evidence only",
       "resolvedAt": "2026-08-17"
     },
     {
       "model": "moonshot/kimi-k3",
       "kind": "md-controls-only",
       "prefer": "official-exact",
-      "reason": "official record has no controls (controlsUnknown); models.dev provider observation is recorded as evidence candidate, official capability stays the authoritative source",
+      "reason": "official record has no controls (controlsUnknown); models.dev provider observation recorded as evidence candidate, official capability stays authoritative",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-sonnet-4-6",
+      "kind": "flag-conflict",
+      "prefer": "official-exact",
+      "reason": "relay provider observation (models.dev) conflicts with official curated capability; official authoritative, observation recorded in models-dev evidence only",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "deepseek/deepseek-v4-flash",
+      "kind": "flag-conflict",
+      "prefer": "official-exact",
+      "reason": "relay provider observation (models.dev) conflicts with official curated capability; official authoritative, observation recorded in models-dev evidence only",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "alibaba/qwen3-235b-a22b",
+      "kind": "flag-conflict",
+      "prefer": "official-exact",
+      "reason": "relay provider observation (models.dev) conflicts with official curated capability; official authoritative, observation recorded in models-dev evidence only",
       "resolvedAt": "2026-08-17"
     }
   ]

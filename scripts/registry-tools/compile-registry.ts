@@ -1,13 +1,14 @@
 #!/usr/bin/env bun
 /**
- * Registry compiler (design §28, §33, G2/G4.1/G4.2).
+ * Registry compiler (design §28, §33, G2/G4.1-G4.4).
  *
  * Reads source registry JSON files under `registry/<vendor>/*.json` (official
  * curated), validates the whole set, writes src/generated/reasoning-registry.json
  * (v1 runtime registry), embeds the models.dev snapshot (G4.1) and builds the
- * evidence-merged v2 registry src/generated/models-dev-registry.json (G4.2):
- * official + models.dev reasoning records, per-model evidence provenance and
- * explicit conflict resolutions. Fails closed on un-resolved conflicts.
+ * evidence-merged v2 registry src/generated/models-dev-registry.json (G4.2-G4.4):
+ * official + models.dev reasoning records, evidence provenance, base-model
+ * identity relations (G4.3) and relay alias identity resolution (G4.4).
+ * Fails closed on un-resolved evidence conflicts.
  *
  * Usage: bun scripts/registry-tools/compile-registry.ts
  */
@@ -15,7 +16,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, copyFileSync } from 'fs'
 import { createHash } from 'node:crypto'
 import { join } from 'path'
-import type { OfficialReasoningCapability, ReasoningRegistry } from '../../src/reasoning/registry/types'
+import type { OfficialReasoningCapability, ReasoningRegistry, ReasoningControl } from '../../src/reasoning/registry/types'
 import { REGISTRY_SCHEMA_VERSION } from '../../src/reasoning/registry/types'
 import { validateRegistry } from '../../src/reasoning/registry/validator'
 import type { ModelsDevSnapshot } from '../../src/utils/models-dev-snapshot'
@@ -49,7 +50,7 @@ function collectEntries(): OfficialReasoningCapability[] {
   for (const vendor of VENDOR_DIRS) {
     const dir = join(REGISTRY_DIR, vendor)
     if (!existsSync(dir)) continue
-    for (const file of readdirSync(dir).filter((f) => f.endsWith(".json")).sort()) {
+    for (const file of readdirSync(dir).filter((f) => f.endsWith('.json')).sort()) {
       const raw = JSON.parse(readFileSync(join(dir, file), 'utf8')) as OfficialReasoningCapability
       entries.push(raw)
     }
@@ -112,8 +113,8 @@ function generateModelsDevRegistry(): void {
     : []
   const resolutionByModel = new Map(resolutions.map((r) => [r.model, r]))
 
-  // G4.3 base-model identity relations (evidence layer; identity hints only,
-  // NEVER capability overrides). snapshot may supply base_model in future syncs.
+  // G4.3 base-model identity relations (identity hints only, NEVER capability
+  // overrides). snapshot may supply base_model in future syncs.
   const baseRelations = existsSync(BASE_MODELS_FILE)
     ? (JSON.parse(readFileSync(BASE_MODELS_FILE, 'utf8')) as { relations: Array<{ model: string; baseModel: string }> }).relations
     : []
@@ -121,36 +122,61 @@ function generateModelsDevRegistry(): void {
   let baseModelFromSnapshot = 0
   let baseModelFromEvidence = 0
 
-  const mdByKey = new Map<string, { reasoning?: boolean; options: Array<{ type: string; values?: string[] }> }>()
+  // G4.4 relay identity: group provider models by model-name segment so relay
+  // aliases (openrouter/glm-5.2, nano-gpt/gpt-5.4-mini, ...) resolve onto the
+  // canonical vendor anchor when one exists. No guessing: segments without a
+  // known vendor anchor stay unresolved on their own keys.
+  const KNOWN_VENDORS = VENDOR_DIRS
+  const nameSegment = (key: string): string => key.split('/').slice(1).join('/')
+  const segmentGroups = new Map<string, { vendorKey?: string; entries: Array<{ key: string; kind: string }> }>()
   for (const pm of snapshot.providerModels) {
-    mdByKey.set(pm.id, { reasoning: pm.reasoning, options: pm.reasoningOptions ?? [] })
+    const seg = nameSegment(pm.id)
+    const g = segmentGroups.get(seg) ?? { entries: [] }
+    const provider = pm.id.split('/')[0]
+    const kind = KNOWN_VENDORS.includes(provider) ? 'vendor' : 'relay'
+    g.entries.push({ key: pm.id, kind })
+    if (kind === 'vendor' && !g.vendorKey) g.vendorKey = pm.id
+    segmentGroups.set(seg, g)
   }
-  for (const m of snapshot.models) {
-    if (!mdByKey.has(m.id)) mdByKey.set(m.id, { reasoning: m.reasoning, options: m.reasoningOptions ?? [] })
+  const mdOptionOf = (key: string): Array<{ type: string; values?: string[] }> => {
+    const pm = snapshot.providerModels.find((x) => x.id === key)
+    return (pm?.reasoningOptions ?? []) as Array<{ type: string; values?: string[] }>
   }
+  const mdReasoningOf = (key: string): boolean | undefined =>
+    snapshot.providerModels.find((x) => x.id === key)?.reasoning
 
   const models: RegistryModelV2[] = []
   const seen = new Set<string>()
   const summary: ConflictsSummary = { officialSuperset: 0, mdExtra: 0, mdControlsOnly: 0, flagConflict: 0, resolutionsRequired: 0 }
   const unresolved: string[] = []
+  let relayAliasTotal = 0
+  let identityAnchorMatch = 0
+  let identityUnresolved = 0
+  let identityVendorKnown = 0
 
+  // 1) official curated entries (anchor canonicals); absorb relay aliases
   for (const entry of officialRegistry.models) {
-    const md = mdByKey.get(entry.model)
-    const mdOptionControls = md?.options ?? []
-    const cls = md ? classifyConflict(entry, md.reasoning, mdOptionControls) : { kind: 'compatible' as const }
+    const seg = nameSegment(entry.model)
+    const group = segmentGroups.get(seg)
+    const relayKeys = (group?.entries ?? []).filter((e) => e.kind === 'relay').map((e) => e.key)
+    const relayAliases = [...new Set(relayKeys)].sort()
+    relayAliasTotal += relayAliases.length
+    identityVendorKnown++
+    const mdRelay = group?.entries.find((e) => e.kind === 'relay')
+    const mdKind = mdRelay ? { reasoning: mdReasoningOf(mdRelay.key), options: mdOptionOf(mdRelay.key) } : undefined
+    const cls = mdKind ? classifyConflict(entry, mdKind.reasoning, mdKind.options) : { kind: 'compatible' as const }
     const conflictResolution = cls.kind === 'compatible' ? undefined : resolutionByModel.get(entry.model)
-    const evidenceBase = baseByModel.get(entry.model)
-    if (evidenceBase) baseModelFromEvidence++
     if (cls.kind !== 'compatible') {
       if (cls.kind === 'md-extra') summary.mdExtra++
       if (cls.kind === 'md-controls-only') summary.mdControlsOnly++
       if (cls.kind === 'flag-conflict') summary.flagConflict++
       summary.resolutionsRequired++
       if (!conflictResolution) unresolved.push(entry.model)
-    } else if (md) {
+    } else if (mdKind) {
       summary.officialSuperset++
     }
-
+    const evidenceBase = baseByModel.get(entry.model)
+    if (evidenceBase) baseModelFromEvidence++
     const evidence: EvidenceV2[] = []
     for (const src of entry.sources) {
       evidence.push({
@@ -163,7 +189,7 @@ function generateModelsDevRegistry(): void {
         claim: 'reasoning-control',
       })
     }
-    if (md) {
+    if (mdKind) {
       evidence.push({
         id: 'models-dev/' + entry.model,
         type: 'models-dev',
@@ -173,10 +199,12 @@ function generateModelsDevRegistry(): void {
         claim: 'reasoning-support',
       })
     }
-
     models.push({
       model: entry.model,
       baseModel: evidenceBase,
+      aliases: relayAliases.length > 0 ? relayAliases : undefined,
+      identityResolution: 'vendor-known',
+      relayCount: new Set(group?.entries.map((e) => e.key) ?? []).size || 1,
       family: undefined,
       reasoning: {
         supported: entry.reasoning,
@@ -185,37 +213,116 @@ function generateModelsDevRegistry(): void {
         evidenceRefs: evidence.map((e) => e.id),
       },
       evidence,
-      layers: { official: true, modelsDev: !!md, inferred: false },
+      layers: { official: true, modelsDev: !!mdKind, inferred: false },
       conflictResolution,
     })
     seen.add(entry.model)
   }
 
-  for (const [key, md] of mdByKey.entries()) {
-    if (seen.has(key)) continue
-    if (md.reasoning !== true) continue
+  // 2) non-official provider segments: merge relay aliases onto vendor anchor
+  //    when one exists; otherwise keep each key unresolved (no guessing).
+  for (const [seg, group] of segmentGroups.entries()) {
+    if ([...seen].some((id) => nameSegment(id) === seg)) continue
+    if (group.vendorKey) {
+      const canonical = group.vendorKey
+      if (seen.has(canonical)) continue
+      const relayKeys = group.entries.filter((e) => e.kind === 'relay').map((e) => e.key)
+      const relayAliases = [...new Set(relayKeys)].sort()
+      relayAliasTotal += relayAliases.length
+      identityAnchorMatch++
+      const options = mdOptionOf(canonical)
+      const evidence: EvidenceV2[] = [{
+        id: 'models-dev/' + canonical,
+        type: 'models-dev',
+        scope: 'provider-model',
+        vendor: 'models.dev',
+        verifiedAt: snapshot.fetchedAt,
+        claim: 'reasoning-support',
+      }]
+      models.push({
+        model: canonical,
+        baseModel: baseByModel.get(canonical),
+        aliases: relayAliases.length > 0 ? relayAliases : undefined,
+        identityResolution: 'anchor-match',
+        relayCount: new Set(group.entries.map((e) => e.key)).size,
+        family: undefined,
+        reasoning: {
+          supported: mdReasoningOf(canonical) === true,
+          controlsKnown: options.length > 0,
+          controls: options,
+          evidenceRefs: evidence.map((e) => e.id),
+        },
+        evidence,
+        layers: { official: false, modelsDev: true, inferred: false },
+        conflictResolution: undefined,
+      })
+      seen.add(canonical)
+    } else {
+      for (const e of group.entries) {
+        if (seen.has(e.key)) continue
+        if (mdReasoningOf(e.key) !== true) continue
+        identityUnresolved++
+        const options = mdOptionOf(e.key)
+        const evidence: EvidenceV2[] = [{
+          id: 'models-dev/' + e.key,
+          type: 'models-dev',
+          scope: 'provider-model',
+          vendor: 'models.dev',
+          verifiedAt: snapshot.fetchedAt,
+          claim: 'reasoning-support',
+        }]
+        models.push({
+          model: e.key,
+          baseModel: baseByModel.get(e.key),
+          aliases: undefined,
+          identityResolution: 'unresolved',
+          relayCount: 1,
+          family: undefined,
+          reasoning: {
+            supported: true,
+            controlsKnown: options.length > 0,
+            controls: options,
+            evidenceRefs: evidence.map((e2) => e2.id),
+          },
+          evidence,
+          layers: { official: false, modelsDev: true, inferred: false },
+          conflictResolution: undefined,
+        })
+        seen.add(e.key)
+      }
+    }
+  }
+
+  // 3) provider-agnostic models keep their own key (not relay-scoped)
+  for (const m of snapshot.models) {
+    if (seen.has(m.id)) continue
+    if (m.reasoning !== true) continue
     const evidence: EvidenceV2[] = [{
-      id: 'models-dev/' + key,
+      id: 'models-dev/' + m.id,
       type: 'models-dev',
-      scope: 'provider-model',
+      scope: 'exact-model',
       vendor: 'models.dev',
       verifiedAt: snapshot.fetchedAt,
       claim: 'reasoning-support',
     }]
     models.push({
-      model: key,
-      family: undefined,
+      model: m.id,
+      baseModel: baseByModel.get(m.id),
+      aliases: undefined,
+      identityResolution: 'unresolved',
+      relayCount: 1,
       family: undefined,
       reasoning: {
         supported: true,
-        controlsKnown: md.options.length > 0,
-        controls: md.options,
+        controlsKnown: (m.reasoningOptions?.length ?? 0) > 0,
+        controls: (m.reasoningOptions ?? []) as ReasoningControl[],
         evidenceRefs: evidence.map((e) => e.id),
       },
       evidence,
       layers: { official: false, modelsDev: true, inferred: false },
       conflictResolution: undefined,
     })
+    seen.add(m.id)
   }
 
   if (unresolved.length > 0) {
@@ -249,7 +356,7 @@ function generateModelsDevRegistry(): void {
   const registryVersion = 'mdev-r' + sha256Hex(JSON.stringify(models) + resolutionsHash).slice(0, 10)
 
   const generated: ModelsDevRegistry = {
-    _notice: 'GENERATED - evidence-merged registry (G4.2). Do not edit. Run: npm run registry:compile',
+    _notice: 'GENERATED - evidence-merged registry (G4.2-G4.4). Do not edit. Run: npm run registry:compile',
     schemaVersion: REGISTRY_SCHEMA_VERSION_V2,
     registryVersion,
     source: {
@@ -269,9 +376,10 @@ function generateModelsDevRegistry(): void {
     seenV2.add(m.model)
     if (m.evidence.length === 0) v2Errors.push('no evidence for ' + m.model)
     if (m.baseModel !== undefined) {
-      if (!/^[a-z0-9-]+\/[a-z0-9._-]+$/i.test(m.baseModel)) v2Errors.push('malformed baseModel ' + m.baseModel + ' for ' + m.model)
+      if (!new RegExp('^[a-z0-9-]+/[a-z0-9._-]+$','i').test(m.baseModel)) v2Errors.push('malformed baseModel ' + m.baseModel + ' for ' + m.model)
       if (m.baseModel === m.model) v2Errors.push('self-referencing baseModel for ' + m.model)
     }
+    if (m.identityResolution === undefined) v2Errors.push('no identityResolution for ' + m.model)
   }
   if (v2Errors.length > 0) {
     console.error('[registry-compile] FAIL: models-dev registry v2 validation:')
@@ -292,6 +400,9 @@ function generateModelsDevRegistry(): void {
   console.log('[registry-compile] G4.3 base-model audit: fromSnapshot=' + baseModelFromSnapshot +
     ' fromEvidence=' + baseModelFromEvidence + ' declared=' + baseRelations.length +
     ' (identity hints only - no capability override)')
+  console.log('[registry-compile] G4.4 identity audit: vendor-known=' + identityVendorKnown +
+    ' anchor-match=' + identityAnchorMatch + ' unresolved=' + identityUnresolved +
+    ' relay-alias-entries=' + relayAliasTotal)
 }
 
 // ------------------------------------------------------------ main -----

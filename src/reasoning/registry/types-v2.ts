@@ -68,6 +68,20 @@ export interface RegistryModelV2 {
    * provides it) or registry/evidence/base-models.json explicit relations.
    */
   baseModel?: string
+  /**
+   * Relay-scoped identity aliases (G4.4), e.g. "openrouter/glm-5.2" for
+   * canonical "zai/glm-5.2". Identity info only - NEVER capability data.
+   */
+  aliases?: string[]
+  /**
+   * How this canonical identity was resolved (G4.4):
+   *  - vendor-known: the id is already in the canonical vendor namespace
+   *  - anchor-match: merged from relay aliases onto a known vendor anchor
+   *  - unresolved: no known vendor anchor; kept on its own key (no guessing)
+   */
+  identityResolution?: 'vendor-known' | 'anchor-match' | 'unresolved'
+  /** Number of relay provider entries merged into this canonical (G4.4 audit). */
+  relayCount?: number
   family?: string
   reasoning: ReasoningCapabilityV2
   evidence: EvidenceV2[]

@@ -43,17 +43,17 @@ Providers configured: 11
 Providers reachable: 8
 Models discovered: 83
 
-Identity resolved: 64
+Identity resolved: 66
   Canonical exact: 0
-  Registry alias: 64
+  Registry alias: 66
   Safe revision: 0
   User alias: 0
   Ambiguous: 0
-Registry missing: 11
+Registry missing: 9
 Alias required: 8
 
-Capability resolved (official): 64
-Not reasoning (no official entry): 19
+Capability resolved (official): 66
+Not reasoning (no official entry): 17
 Transport resolved: 83
 Transport unknown: 0
 Variants generated (current runtime): 0

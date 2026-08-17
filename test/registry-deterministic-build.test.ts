@@ -36,4 +36,21 @@ describe('registry deterministic build', () => {
     expect(a).toBe(b)
     expect(existsSync('registry/openai/gpt-5.4.json')).toBe(true)
   })
+  it('every registry vendor directory is compiled into the generated output', () => {
+    const { readdirSync } = require('node:fs') as typeof import('node:fs')
+    const vendorDirs = readdirSync('registry', { withFileTypes: true })
+      .filter((d) => d.isDirectory())
+      .map((d) => d.name)
+      .sort()
+    expect(vendorDirs.length).toBeGreaterThan(0)
+    const compiled = JSON.parse(readFileSync('src/generated/reasoning-registry.json', 'utf8'))
+    const vendorModels = new Map<string, number>()
+    for (const m of compiled.models) {
+      const vendor = (m.model as string).split('/')[0]
+      vendorModels.set(vendor, (vendorModels.get(vendor) ?? 0) + 1)
+    }
+    for (const vendor of vendorDirs) {
+      expect(vendorModels.get(vendor) ?? 0).toBeGreaterThan(0)
+    }
+  })
 })

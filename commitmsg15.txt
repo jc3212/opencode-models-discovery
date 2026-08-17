@@ -1,0 +1,15 @@
+fix(registry): compile every vendor dir + regression test
+
+Release finding (Phase 6 follow-up): the registry compiler VENDOR_DIRS
+whitelist was missing 'xai', so grok-3/grok-4 entries were silently
+excluded from the generated bundle (33+4=37 but not 39). This is the kind
+of "registry missing leads to wrong reasoning" release-class bug the RC
+observation phase exists to catch.
+
+- compile-registry.ts VENDOR_DIRS now includes 'xai'
+- test/registry-deterministic-build.test.ts: every source vendor dir must
+  appear in the compiled output (adds a 4th test; 369 total)
+- rebuilt dist/cli.js; packaged E2E re-verified with the fixed tarball:
+  grok-4 -> low/medium/high variants in real OpenCode
+- RC-REAL-AUDIT.txt regenerated: identity resolved 66, registry missing 9,
+  capability resolved 66/83, transport unknown 0

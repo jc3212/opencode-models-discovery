@@ -23,7 +23,7 @@ const OUT_DIR = join(ROOT, 'src', 'generated')
 const OUT_FILE = join(OUT_DIR, 'reasoning-registry.json')
 
 const VENDOR_DIRS = [
-  'openai', 'anthropic', 'google', 'deepseek', 'zai', 'alibaba', 'moonshot',
+  'openai', 'anthropic', 'google', 'deepseek', 'zai', 'xai', 'alibaba', 'moonshot',
 ]
 
 function collectEntries(): OfficialReasoningCapability[] {

@@ -409,6 +409,28 @@ function generateModelsDevRegistry(): void {
     process.exit(1)
   }
 
+  // S2 resolution lifecycle: active / stale / invalid.
+  const appliedModels = new Set(generated.models.filter((m) => m.conflictResolution).map((m) => m.model))
+  const existingModels = new Set(generated.models.map((m) => m.model))
+  const activeResolutions: string[] = []
+  const staleResolutions: string[] = []
+  const invalidResolutions: string[] = []
+  for (const r of resolutions) {
+    if (!existingModels.has(r.model)) invalidResolutions.push(r.model)
+    else if (appliedModels.has(r.model)) activeResolutions.push(r.model)
+    else staleResolutions.push(r.model)
+  }
+  if (invalidResolutions.length > 0) {
+    console.error('[registry-compile] FAIL: invalid resolutions reference missing models:')
+    for (const m of invalidResolutions) console.error('  - ' + m)
+    process.exit(1)
+  }
+  console.log('[registry-compile] S2 resolutions: active=' + activeResolutions.length +
+    ' stale=' + staleResolutions.length + ' invalid=' + invalidResolutions.length)
+  if (staleResolutions.length > 0) {
+    console.warn('[registry-compile] WARN: stale resolutions (conflict no longer present): ' + staleResolutions.join(', '))
+  }
+
   writeFileSync(MDEV_OUT_FILE, JSON.stringify(generated, null, 2) + '\n')
 
   console.log('[registry-compile] wrote ' + MDEV_OUT_FILE + ' with ' + generated.models.length + ' models (version ' + registryVersion + ')')

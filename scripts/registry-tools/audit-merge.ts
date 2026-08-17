@@ -62,6 +62,26 @@ md.push('| official + models.dev | ' + layers.both + ' |')
 md.push('| models.dev only | ' + layers.modelsDevOnly + ' |')
 md.push('| inferred | ' + layers.inferred + ' |')
 md.push('')
+// S2 resolution lifecycle (read from compiled artifact + declared list).
+const appliedModels = new Set(ids.filter((m) => m.conflictResolution).map((m) => m.model))
+const existingModels = new Set(ids.map((m) => m.model))
+let activeR = 0
+let staleR = 0
+let invalidR = 0
+for (const r of RESOLUTIONS.resolutions) {
+  if (!existingModels.has(r.model)) invalidR++
+  else if (appliedModels.has(r.model)) activeR++
+  else staleR++
+}
+md.push('')
+md.push('## Resolution lifecycle (S2)')
+md.push('')
+md.push('| Status | Count |')
+md.push('|---|---|')
+md.push('| active | ' + activeR + ' |')
+md.push('| stale | ' + staleR + ' |')
+md.push('| invalid | ' + invalidR + ' |')
+md.push('')
 md.push('## Conflict resolutions (explicit, no silent overwrite)')
 md.push('')
 for (const [kind, n] of conflictKinds) md.push('- ' + kind + ': ' + n + (kind === 'flag-conflict' ? ' (relay observation vs official capability)' : kind === 'md-extra' ? ' (models.dev extra effort values; official authoritative)' : kind === 'md-controls-only' ? ' (models.dev controls vs official none)' : ''))

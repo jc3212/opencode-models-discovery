@@ -47,6 +47,12 @@ function unknownResult(reason: string): TransportResolution {
   }
 }
 
+function hasOfficialEffortCapability(capability: ReasoningCapability | undefined): boolean {
+  return capability?.source === 'official-registry' &&
+    capability.reasoning === true &&
+    capability.options.some((option) => option.type === 'effort' && option.values.length > 0)
+}
+
 export function resolveReasoningTransport(input: TransportResolverInput): TransportResolution {
   const signals = collectSignals(input)
 
@@ -72,9 +78,23 @@ export function resolveReasoningTransport(input: TransportResolverInput): Transp
     }
   }
 
-  // 3. The default npm for relays/gateways must never imply a transport on
-  // its own. Only a profile or explicit config unlocks openai-compatible
-  // reasoning semantics for unknown hosts.
+  // An exact official-registry identity can safely provide the effort value
+  // set. For the generic OpenAI-compatible SDK, infer the SDK wire adapter so
+  // variants are available during model switching. This does NOT verify that
+  // the relay forwards reasoning_effort, so the confidence stays medium and
+  // diagnostics must report forwarding as unverified.
+  if (signals.npm === '@ai-sdk/openai-compatible' && hasOfficialEffortCapability(input.capability)) {
+    return {
+      transport: 'openai-compatible-effort',
+      confidence: 'medium',
+      reason: 'official-model-openai-compatible-effort-inferred',
+      safeToCompile: true,
+    }
+  }
+
+  // 3. The default npm for relays/gateways does not imply a transport on its
+  // own. Without an official effort capability, a profile or explicit config
+  // is still required.
   if (signals.npm === '@ai-sdk/openai-compatible') {
     return unknownResult('openai-compatible-host-api-surface-unresolved')
   }

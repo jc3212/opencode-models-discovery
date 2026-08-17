@@ -30,7 +30,24 @@ describe('reasoning diagnostics', () => {
     expect(line).toContain('canonical=alibaba/qwen-x')
     expect(line).toContain('control=toggle+budget_tokens')
     expect(line).toContain('transport=dashscope-chat')
+    expect(line).toContain('transportConfidence=exact')
     expect(line).toContain('variants=none,high,max')
+  })
+
+  it('marks inferred compatible forwarding as unverified', () => {
+    const resolution = makeResolution({
+      transport: {
+        transport: 'openai-compatible-effort',
+        confidence: 'medium',
+        reason: 'official-model-openai-compatible-effort-inferred',
+        safeToCompile: true,
+      },
+    })
+    expect(formatReasoningDiagnostic(resolution)).toContain('relayForwarding=unverified')
+    expect(summarizeReasoningResolution(resolution)).toMatchObject({
+      transportConfidence: 'medium',
+      relayForwarding: 'unverified',
+    })
   })
 
   it('formats an unknown transport with variants=none', () => {

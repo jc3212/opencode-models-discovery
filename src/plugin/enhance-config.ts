@@ -488,6 +488,7 @@ export async function enhanceConfig(
             const enrichment = applyReasoningEnrichment({
               modelConfig,
               modelId: model.id,
+              providerId: providerName,
               providerConfig: p,
               discoveryConfig: providerDiscoveryConfig,
               modelsDevIndex: modelsDevCache,

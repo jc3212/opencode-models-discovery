@@ -145,7 +145,9 @@ cp ~/.config/opencode/opencode.json ~/.config/opencode/opencode.json.backup-$(da
 当前支持的能力策略（来自真实 schema）：
 
 - `strict`：最保守。不使用官方 Registry 自动推导，只依赖 Relay 明确提供的能力。
-- `official-model`：官方 Registry 证据命中后，可以自动注入官方档位。
+- `official-model`：精确命中官方 Registry 后，可以自动注入官方档位。对于
+  `@ai-sdk/openai-compatible`，只有 Registry 明确给出非空 effort 控制时，
+  `auto` 才会以中等置信度推定 `openai-compatible-effort`；Relay 是否实际转发仍为未验证。
 
 > 注意：本项目没有 `evidence-aware` 或 `permissive` 策略，请不要写入这些不存在的值。
 
@@ -228,6 +230,8 @@ Relay 返回的模型名 `≠` 官方规范名。例如：
 默认 `transport: "auto"`。
 
 - `auto`：由插件根据 provider SDK / baseURL 判断传输协议。
+- 对所有 `@ai-sdk/openai-compatible` provider，`auto` 只在模型精确命中官方 Registry 且存在非空 effort 控制时启用兼容 effort 回退；非官方模型、模糊身份、toggle-only、budget-only 都保持 unknown。
+- 该回退会预先写入所有符合条件模型的 variants，因此在 OpenCode 中切换模型后可立即切换档位，不依赖模型选择事件或运行时探测。
 - 只有当 `audit` 显示某个 provider `compile transport unknown`，并且你有可靠证据确认该 Relay API surface 时，才手动指定。
 - 不要因为 baseURL 看起来像 OpenAI 就强行指定 `openai-compatible-effort`。
 
@@ -258,6 +262,7 @@ Audit 只读，不会发送付费推理请求。
 | Capability unknown | 模型身份已知，但能力数据不足 |
 | Compile transport known | 知道怎么把参数发出去 |
 | Compile transport unknown | 能力已知，但无法安全生成 wire 配置 |
+| Transport confidence medium | 客户端适配器由精确官方 effort 能力推定，Relay forwarding 仍未验证 |
 | No variants | 可能原因见 Troubleshooting |
 
 ## 14. 常见问题
@@ -278,6 +283,12 @@ Audit 只读，不会发送付费推理请求。
 ### 为什么 Relay 接受了请求却仍显示 UNVERIFIED？
 
 收到 2xx 只表示 Relay 接受了请求，不代表它真的把 reasoning 参数转发了。这是 L3 的客观限制。
+
+### 为什么模型切换后不需要重新探测？
+
+OpenCode 1.18.18 没有向插件暴露模型选择器切换事件。插件在启动 discovery 时为所有符合条件的模型一次性写入 `model.variants`；OpenCode 的选择器和 variant 循环直接读取当前模型的 variants。因此热切换依赖预注入配置，不依赖请求时按模型名再次判断。
+
+成功生成非空 variants 时，插件同时写入 `reasoning: true`，使 OpenCode 的模型能力显示与可选档位一致。这个字段不是 variants 显示的门槛，但能避免模型详情错误显示“不支持推理”。
 
 ## 15. Troubleshooting 决策树
 

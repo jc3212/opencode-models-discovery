@@ -23,6 +23,20 @@ describe('reasoning fingerprint', () => {
     expect(a).toBeTypeOf('string')
   })
 
+  it('includes the reasoning resolution algorithm version', () => {
+    const current = computeReasoningFingerprint({ reasoningConfig: { enabled: true } })
+    const legacy = hashString(JSON.stringify({
+      enabled: true,
+      transport: 'auto',
+      aliases: undefined,
+      modelInfoFormat: null,
+      metadataSignature: null,
+      relayDigest: null,
+      registryVersion: null,
+    }))
+    expect(current).not.toBe(legacy)
+  })
+
   it('changes when the transport changes', () => {
     const effort = computeReasoningFingerprint({
       reasoningConfig: { enabled: true, transport: 'openai-compatible-effort' },

@@ -38,10 +38,14 @@ claim your relay has been verified end-to-end. The audit distinguishes
 - `strict` (default): only inject when the current provider/host has
   evidence (provider-native metadata or models.dev). Keeps prior behavior.
 - `official-model`: additionally allow the bundled official registry to
-  provide capability when the provider has no metadata - as long as the
-  transport is known. Recommended for anonymous relays.
+  provide capability when the provider has no metadata. For
+  `@ai-sdk/openai-compatible`, an exact Registry model with a non-empty effort
+  control may infer `openai-compatible-effort` at medium confidence. This
+  enables variants but leaves Relay forwarding explicitly unverified.
 
-Transport unknown still means no variants (design §25, §73).
+Transport unknown still means no variants (design §25, §73). The compatible
+fallback does not apply to unresolved identities, fuzzy/family matches,
+toggle-only controls, budget-only controls, or empty effort sets.
 
 ## Priority (design §16)
 
@@ -91,3 +95,6 @@ The UI shows the effective set, not the accepted-but-equivalent set.
 - The plugin cannot verify what an anonymous relay actually forwards; enable
   `official-model` knowing the capability is official-model-level, and
   verify the relay separately.
+- A compiled Registry variant also sets the OpenCode model's `reasoning: true`
+  capability flag. OpenCode switches variants from `model.variants`; the flag
+  keeps model metadata and UI capability reporting consistent.

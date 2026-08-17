@@ -17,7 +17,11 @@ export function formatReasoningDiagnostic(resolution: ResolvedReasoning): string
   }
   parts.push(`control=${capability.options.map((o) => o.type).join('+') || 'none'}`)
   parts.push(`transport=${transport.transport}`)
+  parts.push(`transportConfidence=${transport.confidence}`)
   parts.push(`transportReason=${transport.reason}`)
+  if (transport.reason === 'official-model-openai-compatible-effort-inferred') {
+    parts.push('relayForwarding=unverified')
+  }
   parts.push(`variants=${Object.keys(variants).join(',') || 'none'}`)
 
   if (model.ambiguous) {
@@ -35,7 +39,9 @@ export function summarizeReasoningResolution(resolution: ResolvedReasoning): Rec
     capabilitySource: resolution.capability.source,
     control: resolution.capability.options.map((o) => o.type).join('+') || null,
     transport: resolution.transport.transport,
+    transportConfidence: resolution.transport.confidence,
     transportReason: resolution.transport.reason,
+    relayForwarding: resolution.transport.reason === 'official-model-openai-compatible-effort-inferred' ? 'unverified' : undefined,
     variants: Object.keys(resolution.variants),
   }
 }

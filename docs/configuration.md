@@ -50,7 +50,8 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 | `provider.<name>.options.modelsDiscovery.cache.enabled` | `boolean` | Opt in to provider-scoped cached filtered and enriched model configurations; defaults to `false` |
 | `provider.<name>.options.modelsDiscovery.cache.ttlSeconds` | non-negative finite `number` | Cache lifetime in seconds; defaults to `86400` |
 | `provider.<name>.options.modelsDiscovery.reasoning.enabled` | `boolean` | Enable automatic reasoning variant generation for discovered models; defaults to `true`. Set `false` to keep pre-reasoning behavior |
-| `provider.<name>.options.modelsDiscovery.reasoning.transport` | `string` | Explicit reasoning transport: `auto` (default), `openai-compatible-effort`, `openrouter`, `dashscope-chat`, `anthropic`, `google`, `alibaba-sdk`. Only `auto` or a high-confidence profile generates variants |
+| `provider.<name>.options.modelsDiscovery.reasoning.capabilityPolicy` | `"strict" \| "official-model"` | `strict` uses host/provider evidence only. `official-model` also allows exact bundled Registry capability; required for the compatible effort inference |
+| `provider.<name>.options.modelsDiscovery.reasoning.transport` | `string` | Reasoning transport: `auto` (default), `openai-compatible-effort`, `openrouter`, `dashscope-chat`, `anthropic`, `google`, `alibaba-sdk`. `auto` uses known profiles and may infer compatible effort at medium confidence for exact official Registry effort models; Relay forwarding remains unverified |
 | `provider.<name>.options.modelsDiscovery.reasoning.aliases` | `Record<string,string>` | Map discovered model ids to canonical models for reasoning metadata lookup only (never changes the sent model id) |
 
 Recommended approach:

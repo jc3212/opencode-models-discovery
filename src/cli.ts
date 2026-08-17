@@ -23,7 +23,6 @@ import { resolveReasoningForModel } from './reasoning/enricher'
 import { loadRegistry } from './reasoning/registry/loader'
 import { resolveOfficialModelCapability } from './reasoning/registry/resolver'
 import { resolveRelayAware } from './reasoning/relay/shadow'
-import { resolveReasoningTransport } from './reasoning/transport'
 import { buildReasoningCoverageReport } from './reasoning/coverage'
 import type { ProviderDiscoveryConfig } from './types/plugin-config'
 import type { ResolvedReasoning } from './reasoning/types'
@@ -120,7 +119,8 @@ function packageVersion(): string {
 
 function pluginCommit(): string {
   // npm pack embeds the source revision in package.json "gitHead" when
-  // available; fall back to a git call inside the package root.
+  // available; fall back only when the package root itself is a git worktree.
+  // An installed package can live below an unrelated host repository.
   try {
     const require = createRequire(import.meta.url)
     const gitHead = require('../package.json').gitHead
@@ -128,7 +128,10 @@ function pluginCommit(): string {
   } catch { /* fall through */ }
   try {
     const dir = path.dirname(fileURLToPath(import.meta.url))
-    return execFileSync('git', ['-C', dir, 'rev-parse', '--short', 'HEAD'], { timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().slice(0, 12) || 'n/a'
+    const packageRoot = path.resolve(dir, '..')
+    const gitRoot = execFileSync('git', ['-C', packageRoot, 'rev-parse', '--show-toplevel'], { timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim()
+    if (path.resolve(gitRoot) !== packageRoot) return 'n/a'
+    return execFileSync('git', ['-C', packageRoot, 'rev-parse', '--short', 'HEAD'], { timeout: 3000, stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim().slice(0, 12) || 'n/a'
   } catch { return 'n/a' }
 }
 
@@ -197,6 +200,7 @@ async function main(): Promise<void> {
     console.log(`Provider ${providerId} (${host ?? 'unknown'})`)
     console.log(`  Models: ${models.length}`)
     totals.models += models.length
+    const resolutions: ResolvedReasoning[] = []
 
     for (const model of models) {
       const registryMatch = resolveOfficialModelCapability(model.id, registry, { aliases: userAliases })
@@ -214,6 +218,11 @@ async function main(): Promise<void> {
       const capabilitySource = registryMatch ? 'OFFICIAL' : 'UNKNOWN'
       if (registryMatch) totals.capabilityResolved++
       if (!registryMatch) totals.notReasoning++
+      const resolution = resolveReasoningForModel({
+        modelConfig: {}, modelId: model.id, providerId, providerConfig: provider,
+        discoveryConfig: discovery, modelsDevIndex, providerMetadata: model, registry,
+      })
+      if (resolution) resolutions.push(resolution)
       const relayShadow = resolveRelayAware({
         providerId, npm: provider?.npm, baseURL, modelId: model.id, rawModel: model,
         modelsDevIndex, aliases: userAliases, relayConfig: discovery?.reasoning?.relay,
@@ -221,16 +230,10 @@ async function main(): Promise<void> {
       const ingressKnown = relayShadow.ingress !== 'unknown'
       if (ingressKnown) totals.ingressTransportResolved++
       else totals.ingressTransportUnknown++
-      // Compile transport reuses the EXACT runtime enrichment gate
-      // (src/reasoning/transport.ts). It must never be re-derived here; the
-      // CLI, tests and the runtime config hook all share this one resolver.
-      const compileTransport = resolveReasoningTransport({
-        providerId,
-        npm: provider?.npm,
-        baseURL,
-        explicitTransport: discovery?.reasoning?.transport === 'auto' ? undefined : discovery?.reasoning?.transport,
-      })
-      const compileKnown = compileTransport.transport !== 'unknown' && compileTransport.safeToCompile
+      // Reuse the full runtime resolution, including capability-dependent
+      // transport inference. The CLI must not maintain a second transport path.
+      const compileTransport = resolution?.transport
+      const compileKnown = compileTransport !== undefined && compileTransport.transport !== 'unknown' && compileTransport.safeToCompile
       if (compileKnown) totals.compileTransportResolved++
       else totals.compileTransportUnknown++
 
@@ -245,14 +248,11 @@ async function main(): Promise<void> {
           console.log(`    Reasoning: ${levels.join(', ') || 'n/a'}`)
         }
         console.log(`    Ingress transport: ${relayShadow.ingress}`)
-        console.log(`    Compile transport: ${compileTransport.transport} (reason=${compileTransport.reason}, safe=${compileTransport.safeToCompile})`)
+        console.log(`    Compile transport: ${compileTransport?.transport ?? 'unknown'} (reason=${compileTransport?.reason ?? 'resolution-unavailable'}, confidence=${compileTransport?.confidence ?? 'none'}, safe=${compileTransport?.safeToCompile ?? false})`)
         console.log(`    Relay forwarding: UNVERIFIED`)
       }
     }
 
-    const resolutions = models.map((m) => resolveReasoningForModel({
-      modelConfig: {}, modelId: m.id, providerConfig: provider, discoveryConfig: discovery, modelsDevIndex, providerMetadata: m, registry,
-    })).filter((r): r is ResolvedReasoning => r !== undefined)
     const report = buildReasoningCoverageReport(providerId, resolutions)
     console.log(`  Variants generated (current runtime): ${report.summary.variantEnabledModels}`)
     totals.variantsGenerated += report.summary.variantEnabledModels

@@ -103,8 +103,10 @@ export function classifyReasoningEntry(
     }
   }
 
-  // Transport resolved; wire verification decides VERIFIED vs RESOLVED.
-  const wireVerified = options.wireVerified === true || VERIFIED_TRANSPORTS.has(transport.transport)
+  // Transport resolved; inferred transports remain RESOLVED even when their
+  // SDK adapter has wire tests, because the relay forwarding is unverified.
+  const confidenceVerified = transport.confidence === 'exact' || transport.confidence === 'high'
+  const wireVerified = options.wireVerified ?? (VERIFIED_TRANSPORTS.has(transport.transport) && confidenceVerified)
   return {
     providerId,
     modelId: model.discoveredModelId,
@@ -113,6 +115,7 @@ export function classifyReasoningEntry(
     transportStatus: wireVerified ? 'verified' : 'resolved',
     status: wireVerified ? 'VERIFIED' : 'RESOLVED',
     variants: variantKeys,
+    ...(wireVerified ? {} : { reason: transport.reason }),
   }
 }
 

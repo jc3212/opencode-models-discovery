@@ -3,8 +3,10 @@
 > **Conservative Automatic Reasoning Enrichment for Dynamically Discovered OpenCode Models.**
 
 This plugin can automatically generate OpenCode `model.variants` for discovered
-models whose reasoning metadata and API transport semantics are both known with
-high confidence. It never guesses.
+models whose reasoning metadata and API transport semantics meet the configured
+evidence policy. Exact official Registry matches may use a deliberately marked
+medium-confidence OpenAI-compatible transport inference; fuzzy model-name
+matching is never used.
 
 ## Core Principle
 
@@ -47,7 +49,7 @@ How reasoning controls should be expressed for this provider's API surface.
 
 | Value | Meaning |
 |-------|---------|
-| `auto` (default) | Only compile variants when transport confidence is high (explicit config or a known provider profile). Otherwise keep the model without variants. |
+| `auto` (default) | Compile for explicit/known provider profiles. For `@ai-sdk/openai-compatible`, also infer effort transport at medium confidence only when `capabilityPolicy: "official-model"` resolves an exact official model with a non-empty effort control. Relay forwarding remains unverified. |
 | `openai-compatible-effort` | OpenAI-style `reasoning_effort` on the wire (via `reasoningEffort`). |
 | `openrouter` | OpenRouter `reasoning.effort` / `reasoning.max_tokens`. |
 | `dashscope-chat` | DashScope / Qwen `enable_thinking` + `thinking_budget` (snake_case passthrough via an OpenAI-compatible surface). |
@@ -109,11 +111,15 @@ For `toggle` + `budget_tokens` (e.g. Qwen on DashScope), the plugin produces:
 - Known provider profiles (OpenRouter npm, DashScope baseURL/provider id,
   `@ai-sdk/alibaba`, `@ai-sdk/anthropic`, `@ai-sdk/google`) resolve with
   high confidence.
-- **`@ai-sdk/openai-compatible` + unknown host ⇒ `unknown` transport.** This
-  is deliberate: the same SDK is used by relays, first-party APIs, and
-  self-hosted proxies, so the npm package alone proves nothing about reasoning
-  semantics.
-- A model name (e.g. "qwen") never decides transport on its own.
+- **`@ai-sdk/openai-compatible` + an exact official Registry effort model**
+  resolves to `openai-compatible-effort` with **medium** confidence. This makes
+  the Registry's exact effort variants available for model switching, but does
+  not prove that the relay forwards `reasoning_effort`.
+- `@ai-sdk/openai-compatible` without that exact non-empty effort capability
+  remains `unknown`. Non-official names, ambiguous identities, empty effort
+  sets, and toggle/budget-only controls are not promoted by this fallback.
+- A fuzzy or family-level model-name match never decides capability or
+  transport.
 
 ## Behavior When Transport Is Unknown
 
@@ -202,16 +208,19 @@ The plugin logs one line per reasoning decision:
 ```
 
 When transport is unresolved the line reports `transport=unknown` and
-`variants=none` with the reason.
+`variants=none` with the reason. The compatible inference reports
+`transportConfidence=medium`,
+`transportReason=official-model-openai-compatible-effort-inferred`, and
+`relayForwarding=unverified`.
 
 ## What "thinking intensity" means here
 
-This plugin proves that the provider/API accepted and forwarded the requested
-reasoning control (e.g. the request body contains `reasoning_effort: high`). It
-does NOT measure how much compute the model actually spent. Unless the upstream
-response reports reasoning/token usage, the plugin's claim is limited to
-"the reasoning control was sent correctly", not "the model thought exactly X%
-more".
+The adapter wire tests prove how an AI SDK serializes a selected variant (for
+example `reasoningEffort: "high"` to `reasoning_effort: "high"`). A successful
+third-party Relay response proves only that the Relay accepted the request. It
+does NOT prove that the Relay forwarded the field or that the upstream model
+spent more reasoning compute. Those remain `UNVERIFIED` without upstream or
+Relay-side evidence.
 
 ## Caching
 
@@ -224,9 +233,10 @@ correctness. The existing persisted model-discovery cache stores the resulting
 
 ### 1. Model + reasoning variants appear automatically
 
-The plugin obtained trustworthy reasoning metadata and a verified transport.
-For example a gpt model with effort metadata on a provider whose surface is
-confirmed OpenAI-compatible:
+The plugin obtained trustworthy reasoning metadata and either a verified
+transport or the narrowly scoped medium-confidence compatible inference. When
+variants are compiled, the generated OpenCode model also receives
+`reasoning: true`. For example a gpt model with effort metadata:
 
 ```json
 {
@@ -270,14 +280,15 @@ variants. User configuration is never overwritten by the plugin.
 
 | Transport | Status | Wire verified | How to enable |
 |-----------|--------|---------------|---------------|
-| OpenAI-compatible effort | **VERIFIED** | yes | `transport: "openai-compatible-effort"` or known profile |
+| OpenAI-compatible effort, explicit/known profile | **VERIFIED adapter** | yes | `transport: "openai-compatible-effort"` or known profile |
+| OpenAI-compatible effort, exact official-model inference | **RESOLVED** | adapter yes; Relay no | `transport: "auto"`, `capabilityPolicy: "official-model"`, exact Registry effort model |
 | OpenAI (first-party, Responses API) | **VERIFIED** | yes (`reasoning.effort` + summary) | `transport: "openai"` or `npm: "@ai-sdk/openai"` |
 | DashScope / Qwen | **VERIFIED** | yes | `transport: "dashscope-chat"` |
 | OpenRouter | **VERIFIED** | yes | `transport: "openrouter"` |
 | Anthropic | **VERIFIED** | yes (effort/budget/toggle) | `transport: "anthropic"` |
 | Gemini | **VERIFIED** | yes (level/budget, never both) | `transport: "google"` |
 | Alibaba SDK | **VERIFIED** | yes (camelCase toggle/budget) | `transport: "alibaba-sdk"` |
-| New API / Sub2API relays | **UNKNOWN by default** | n/a | only via explicit `transport` after confirming your instance's channels |
+| New API / Sub2API relays | **UNKNOWN unless exact effort fallback applies** | Relay unverified | explicit transport, provider-native metadata, or exact official effort inference |
 
 > New API and Sub2API are multi-channel relays: a single instance can route
 > different models through OpenAI, Azure, OpenRouter, or Anthropic channels with
@@ -317,10 +328,11 @@ them to a real upstream. This has two consequences the plugin is honest about:
   unresolved (missing != unsupported).
 - **Stays shadow-only for relay consensus**: relay-aware consensus results are
   computed and reported by the audit, but not injected into runtime variants
-  until a path passes local conformance and shows meaningful coverage. Only
-  provider-native exact metadata (Grok, reasoning_options) is injected today.
-- **Never guesses by model name**: `gpt-x` or `claude-x` never imply a fixed
-  transport or effort set.
+  until a path passes local conformance and shows meaningful coverage.
+  Provider-native exact metadata is injected directly; exact bundled Registry
+  effort entries may use the separately marked compatible inference.
+- **Never fuzzy-matches by model name**: only exact canonical ids, exact
+  Registry aliases, or user aliases can unlock official-model inference.
 
 ### The durable fix is upstream metadata
 
@@ -349,4 +361,3 @@ npm run reasoning:audit --verbose  # per-model detail
   models.dev catalog.
 - Never prints API keys, Authorization headers, cookies, or tokens.
 - Base URLs are reduced to hostname only.
-

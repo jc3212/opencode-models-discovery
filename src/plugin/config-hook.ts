@@ -7,17 +7,30 @@ import { injectConfigCommand, injectMigrationCommand } from './commands'
 import type { PluginLogger } from './logger'
 import type { PluginInput } from '@opencode-ai/plugin'
 import type { PluginConfig } from '../types/plugin-config'
+import { DEFAULT_REQUEST_TIMEOUT_MS } from '../utils/openai-compatible-api'
 
 export const DEFAULT_CONFIG_HOOK_TIMEOUT_MS = 5000
 
 export function getConfigHookTimeoutMs(config: any, logger: PluginLogger): number {
-  const providerTimeouts = Object.values(config?.provider ?? {})
-    .map((provider: any) => provider?.options?.modelsDiscovery?.timeoutMs)
-    .filter((timeoutMs): timeoutMs is number => typeof timeoutMs === 'number' && Number.isFinite(timeoutMs) && timeoutMs > 0)
-  const providerTimeoutMs = providerTimeouts.length > 0 ? Math.max(...providerTimeouts) : undefined
-  const timeoutMs = Math.max(DEFAULT_CONFIG_HOOK_TIMEOUT_MS, providerTimeoutMs ?? 0)
+  const providerBudgets = Object.values(config?.provider ?? {})
+    .filter((provider: any) => provider?.options?.baseURL && provider?.options?.modelsDiscovery?.enabled !== false)
+    .map((provider: any) => {
+      const discovery = provider.options?.modelsDiscovery ?? {}
+      const configured = discovery.timeoutMs
+      const requestTimeoutMs = typeof configured === 'number' && Number.isFinite(configured) && configured > 0
+        ? configured
+        : DEFAULT_REQUEST_TIMEOUT_MS
+      const hasMetadataRequest = discovery.modelInfoFormat === 'litellm' || discovery.modelInfoFormat === 'lmstudio'
+      return requestTimeoutMs * (hasMetadataRequest ? 2 : 1)
+    })
+  const providerTimeoutBudgetMs = providerBudgets.reduce((sum, budget) => sum + budget, 0)
+  const timeoutMs = Math.max(DEFAULT_CONFIG_HOOK_TIMEOUT_MS, providerTimeoutBudgetMs)
 
-  logger.debug('Using config hook timeout', { timeoutMs, providerTimeoutMs })
+  logger.debug('Using config hook timeout', {
+    timeoutMs,
+    providerTimeoutBudgetMs,
+    providerCount: providerBudgets.length,
+  })
   return timeoutMs
 }
 

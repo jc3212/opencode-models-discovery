@@ -2,6 +2,8 @@ import type { ProviderReasoningConfig } from '../types/plugin-config'
 import type { ModelInfoFormat } from '../types/plugin-config'
 import type { ModelsDevModel } from '../utils/models-dev-fetcher'
 
+const REASONING_RESOLUTION_VERSION = 2
+
 /**
  * Reasoning resolution fingerprint (design §9).
  *
@@ -62,6 +64,7 @@ export function computeReasoningFingerprint(input: ReasoningFingerprintInput): s
     : undefined
 
   const payload = {
+    resolutionVersion: REASONING_RESOLUTION_VERSION,
     enabled: input.reasoningConfig?.enabled ?? true,
     transport: input.reasoningConfig?.transport ?? 'auto',
     aliases,

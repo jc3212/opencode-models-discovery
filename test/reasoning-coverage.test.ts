@@ -49,15 +49,33 @@ describe('reasoning coverage classification', () => {
     expect(entry.transportStatus).toBe('verified')
   })
 
-  it('reports RESOLVED for a transport explicitly marked not wire-verified', () => {
-    // A hypothetical future transport with no wire evidence.
+  it('reports RESOLVED when wire verification is explicitly disabled', () => {
     const entry = classifyReasoningEntry('prov', makeResolution({
       transport: { transport: 'google', confidence: 'exact', reason: 'explicit-config', safeToCompile: true },
       variants: { high: { x: 1 } },
     }), { wireVerified: false })
-    // wireVerified:false does not downgrade set-members; it only marks the
-    // caller's flag. The set still governs. So google stays VERIFIED.
-    expect(entry.status).toBe('VERIFIED')
+    expect(entry.status).toBe('RESOLVED')
+    expect(entry.transportStatus).toBe('resolved')
+  })
+
+  it('reports inferred compatible transport as RESOLVED and unverified', () => {
+    const entry = classifyReasoningEntry('prov', makeResolution({
+      capability: {
+        reasoning: true,
+        options: [{ type: 'effort', values: ['low', 'high'] }],
+        source: 'official-registry',
+        confidence: 'model-official',
+      },
+      transport: {
+        transport: 'openai-compatible-effort',
+        confidence: 'medium',
+        reason: 'official-model-openai-compatible-effort-inferred',
+        safeToCompile: true,
+      },
+    }))
+    expect(entry.status).toBe('RESOLVED')
+    expect(entry.transportStatus).toBe('resolved')
+    expect(entry.reason).toBe('official-model-openai-compatible-effort-inferred')
   })
 
   it('classifies unknown transport as TRANSPORT_UNKNOWN with no variants', () => {

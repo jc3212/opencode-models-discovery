@@ -18,7 +18,7 @@ Originally inspired by [opencode-lmstudio](https://github.com/nicktasios/opencod
 - Supports provider-level enablement, endpoint overrides, and model filters
 - Supports regex-based model id filtering and raw provider field equality filtering
 - Can enrich model limits and reasoning metadata from provider-specific endpoints
-- Automatically generates conservative, transport-verified reasoning variants (OpenAI-compatible effort, OpenRouter, DashScope/Qwen, Anthropic, Gemini, Alibaba) only when the API surface is known with high confidence; never guesses
+- Automatically generates conservative reasoning variants (OpenAI-compatible effort, OpenRouter, DashScope/Qwen, Anthropic, Gemini, Alibaba) from verified transports or a clearly labeled medium-confidence compatible fallback for exact official Registry effort models; never fuzzy-matches model identity
 - Supports OpenCode `/connect` credentials for custom providers
 - Optionally caches discovered provider models in plugin-owned XDG data files
 

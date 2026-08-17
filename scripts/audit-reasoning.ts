@@ -136,10 +136,12 @@ async function auditProvider(providerId: string, provider: any): Promise<{ summa
   for (const model of result.models.filter(isValidModel)) {
     const resolution = resolveReasoningForModel({
       modelId: model.id,
+      providerId,
       providerConfig: provider,
       discoveryConfig: discovery,
       modelsDevIndex,
       providerMetadata: model,
+      registry: bundledRegistry,
       outputLimit: undefined,
     })
     if (resolution) resolutions.push(resolution)

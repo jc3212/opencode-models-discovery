@@ -23,12 +23,15 @@ import { resolveOfficialModelCapability } from './registry/resolver'
  *
  * Pipeline: canonical -> capability -> transport -> compile -> merge.
  * The result is written as `modelConfig.variants` (OpenCode model config),
- * which OpenCode applies as provider options on the wire.
+ * which OpenCode applies as provider options on the wire. A successfully
+ * compiled variant set also marks the model as reasoning-capable so OpenCode's
+ * model metadata stays consistent with the available controls.
  */
 
 export interface ReasoningEnricherInput {
   modelConfig: Record<string, unknown>
   modelId: string
+  providerId?: string
   providerConfig: Record<string, unknown>
   discoveryConfig?: ProviderDiscoveryConfig
   modelsDevIndex?: Map<string, ModelsDevModel>
@@ -84,7 +87,7 @@ export function resolveReasoningForModel(input: ReasoningEnricherInput): Resolve
     capability = resolveReasoningCapability({ canonical, modelsDevModel })
   }
 
-  const providerId = typeof input.providerConfig.providerId === 'string' ? input.providerConfig.providerId : undefined
+  const providerId = input.providerId ?? (typeof input.providerConfig.providerId === 'string' ? input.providerConfig.providerId : undefined)
   const signals = providerSignals(providerConfig, providerId)
 
   // Official registry fallback (design §16, §21-24): when the policy is
@@ -173,6 +176,7 @@ export function applyReasoningEnrichment(input: ReasoningEnricherInput): Reasoni
   const { variants } = resolution
 
   if (Object.keys(variants).length > 0) {
+    input.modelConfig.reasoning = true
     input.modelConfig.variants = variants
   }
 

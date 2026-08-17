@@ -55,11 +55,13 @@ describe('capability policy (design §21-24, §74)', () => {
 
   it('strict (default) does NOT use the official registry for an anonymous relay', () => {
     const modelConfig = run('gpt-5.4', { policy: 'strict' })
+    expect(modelConfig.reasoning).toBeUndefined()
     expect(modelConfig.variants).toBeUndefined()
   })
 
   it('official-model uses the registry when transport is known', () => {
     const modelConfig = run('gpt-5.4', { policy: 'official-model' })
+    expect(modelConfig.reasoning).toBe(true)
     expect(modelConfig.variants).toEqual({
       none: { reasoningEffort: 'none' },
       low: { reasoningEffort: 'low' },
@@ -114,10 +116,10 @@ describe('relay limits and user precedence (design §71-72)', () => {
   })
 })
 
-describe('transport unknown (design §73, §25)', () => {
-  it('official-model with unknown transport produces no variants', () => {
+describe('compatible transport inference', () => {
+  it('official-model effort controls infer compatible variants as unverified', () => {
     const modelConfig: Record<string, unknown> = { id: 'gpt-5.4' }
-    applyReasoningEnrichment({
+    const result = applyReasoningEnrichment({
       modelConfig,
       modelId: 'gpt-5.4',
       providerConfig: { npm: '@ai-sdk/openai-compatible', options: { baseURL: 'https://gw.example.com/v1' } },
@@ -126,7 +128,20 @@ describe('transport unknown (design §73, §25)', () => {
       registry,
       providerMetadata: {},
     })
-    expect(modelConfig.variants).toBeUndefined()
+    expect(modelConfig.reasoning).toBe(true)
+    expect(modelConfig.variants).toEqual({
+      none: { reasoningEffort: 'none' },
+      low: { reasoningEffort: 'low' },
+      medium: { reasoningEffort: 'medium' },
+      high: { reasoningEffort: 'high' },
+      xhigh: { reasoningEffort: 'xhigh' },
+    })
+    expect(result.resolution?.transport).toMatchObject({
+      transport: 'openai-compatible-effort',
+      confidence: 'medium',
+      reason: 'official-model-openai-compatible-effort-inferred',
+      safeToCompile: true,
+    })
   })
 })
 

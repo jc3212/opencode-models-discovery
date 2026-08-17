@@ -73,6 +73,52 @@ describe('transport resolver', () => {
     })
   })
 
+  it('infers openai-compatible effort for an official model effort capability', () => {
+    const result = resolveReasoningTransport({
+      npm: '@ai-sdk/openai-compatible',
+      baseURL: 'https://gateway.example.com/v1',
+      providerId: 'my-gateway',
+      capability: {
+        reasoning: true,
+        options: [{ type: 'effort', values: ['low', 'medium', 'high'] }],
+        source: 'official-registry',
+        confidence: 'model-official',
+      },
+    })
+    expect(result).toMatchObject({
+      transport: 'openai-compatible-effort',
+      confidence: 'medium',
+      reason: 'official-model-openai-compatible-effort-inferred',
+      safeToCompile: true,
+    })
+  })
+
+  it('does not infer openai-compatible effort from non-official metadata', () => {
+    const result = resolveReasoningTransport({
+      npm: '@ai-sdk/openai-compatible',
+      capability: {
+        reasoning: true,
+        options: [{ type: 'effort', values: ['low', 'high'] }],
+        source: 'models.dev',
+        confidence: 'high',
+      },
+    })
+    expect(result).toMatchObject({ transport: 'unknown', safeToCompile: false })
+  })
+
+  it('does not infer an effort transport for official toggle-only controls', () => {
+    const result = resolveReasoningTransport({
+      npm: '@ai-sdk/openai-compatible',
+      capability: {
+        reasoning: true,
+        options: [{ type: 'toggle' }],
+        source: 'official-registry',
+        confidence: 'model-official',
+      },
+    })
+    expect(result).toMatchObject({ transport: 'unknown', safeToCompile: false })
+  })
+
   it('treats qwen through an unknown gateway as unknown (no model-name guessing)', () => {
     const result = resolveReasoningTransport({
       npm: '@ai-sdk/openai-compatible',

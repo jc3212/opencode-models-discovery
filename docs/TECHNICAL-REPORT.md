@@ -349,3 +349,18 @@ Real audit baseline regenerated           PASS
 | Transport | 新 API surface wire 验证 | 按需 |
 
 > Registry 新增模型走：`registry/<vendor>/<model>.json`（带证据）→ compile → registryVersion 变化 → 发布（无需核心发版）。
+
+---
+
+## 9. 2026-08-17 当前实现补充（不改写 RC1 历史快照）
+
+本节记录 RC1 报告之后的当前行为；§6-§8 的版本、提交和 audit 数字仍只代表其历史快照。
+
+- `dieqiyun` 的 OpenCode provider SDK 已改为 `@ai-sdk/openai`，真实最小 Responses API 请求成功返回；这证明 SDK/API surface 可用，不证明 Relay 实际投入 reasoning compute。
+- 对所有 `@ai-sdk/openai-compatible` provider，`transport: auto` 新增窄范围回退：仅当模型精确命中 bundled official Registry，且 Registry 明确给出非空 effort 控制时，推定 `openai-compatible-effort`。
+- 推定结果固定标为 `confidence=medium`、`relayForwarding=unverified`，coverage 只能进入 `RESOLVED`，不能因适配器 wire test 自动升级为 `VERIFIED`。
+- 非官方模型、模糊或歧义 identity、空 effort、toggle-only、budget-only 模型继续 fail closed，不生成该回退 variants。
+- 插件启动时为所有符合条件模型预注入 variants；OpenCode 1.18.18 的模型/variant 切换直接读取当前模型的 `model.variants`，无需模型选择器事件或运行时探测。
+- 非空自动 variants 会同步设置 `model.reasoning=true`。该字段不控制 variant 列表，但会影响模型能力展示和部分 provider 默认参数逻辑。
+- reasoning resolution fingerprint 已升级，旧缓存自动 variants 会失效并重算；audit CLI 与运行时继续共用完整 resolution 路径。
+- 当前真实 audit：9 个可达 provider、76 个模型、61 个 official capability、69 个 compile transport resolved、7 个 unknown、61 个模型生成 variants。compatible 推定日志明确输出 medium/unverified。

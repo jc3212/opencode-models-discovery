@@ -74,6 +74,32 @@ for (const r of RESOLUTIONS.resolutions) {
   else staleR++
 }
 md.push('')
+// E1 - official evidence age audit (maintenance warning only; never treated as stale by itself).
+const officialEvidence: Array<{ verifiedAt?: string }> = []
+for (const m of ids) for (const e of m.evidence) if (e.type === 'vendor-official-doc' || e.type === 'manual-verified') officialEvidence.push({ verifiedAt: e.verifiedAt })
+const now = Date.now()
+let evFresh = 0
+let ev31to90 = 0
+let evOld = 0
+let evMissing = 0
+for (const ev of officialEvidence) {
+  if (!ev.verifiedAt || !/^\d{4}-\d{2}-\d{2}$/.test(ev.verifiedAt)) { evMissing++; continue }
+  const days = Math.floor((now - Date.parse(ev.verifiedAt + 'T00:00:00Z')) / 86400000)
+  if (days <= 30) evFresh++
+  else if (days <= 90) ev31to90++
+  else evOld++
+}
+md.push('')
+md.push('## Official evidence maintenance (E1)')
+md.push('')
+md.push('| Age | Count |')
+md.push('|---|---|')
+md.push('| total official/manual evidence | ' + officialEvidence.length + ' |')
+md.push('| verified <= 30 days | ' + evFresh + ' |')
+md.push('| 31-90 days | ' + ev31to90 + ' |')
+md.push('| > 90 days (maintenance warning) | ' + evOld + ' |')
+md.push('| missing verifiedAt | ' + evMissing + ' |')
+md.push('')
 md.push('## Resolution lifecycle (S2)')
 md.push('')
 md.push('| Status | Count |')

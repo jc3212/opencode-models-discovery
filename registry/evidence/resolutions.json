@@ -1,0 +1,150 @@
+{
+  "_notice": "GENERATED - explicit evidence conflict resolutions for official vs models.dev. Do not edit without re-running the conflict audit. Run: npm run registry:compile",
+  "source": "opencode-models-discovery",
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-17",
+  "resolutions": [
+    {
+      "model": "openai/gpt-5.6",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "none"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "openai/gpt-5.4-mini",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "none"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-sonnet-5",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-fable-5",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-opus-4-7",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-opus-4-8",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "anthropic/claude-opus-5",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "google/gemini-3.5-flash",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "minimal"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "google/gemini-3.6-flash",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "minimal"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "google/gemini-3-flash",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "minimal"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "deepseek/deepseek-v4-pro",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "none",
+        "xhigh"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "zai/glm-5.2",
+      "kind": "md-extra",
+      "prefer": "official-exact",
+      "mdOnlyValues": [
+        "max"
+      ],
+      "reason": "official curated effort set is the authoritative model capability; models.dev extra value(s) are provider-serving observations recorded in evidence but not adopted",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "xai/grok-3",
+      "kind": "flag-conflict",
+      "prefer": "official-exact",
+      "reason": "official curated capability (G1-G3 verified) is authoritative; models.dev provider observation of reasoning=false conflicts and is treated as a provider-serving observation only",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "alibaba/qwen3-max",
+      "kind": "flag-conflict",
+      "prefer": "official-exact",
+      "reason": "official curated capability (G1-G3 verified) is authoritative; models.dev provider observation of reasoning=false conflicts and is treated as a provider-serving observation only",
+      "resolvedAt": "2026-08-17"
+    },
+    {
+      "model": "moonshot/kimi-k3",
+      "kind": "md-controls-only",
+      "prefer": "official-exact",
+      "reason": "official record has no controls (controlsUnknown); models.dev provider observation is recorded as evidence candidate, official capability stays the authoritative source",
+      "resolvedAt": "2026-08-17"
+    }
+  ]
+}

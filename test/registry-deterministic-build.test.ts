@@ -29,6 +29,23 @@ describe('registry deterministic build', () => {
     expect(raw.registryVersion).toMatch(/^r[0-9a-f]+$/)
   })
 
+
+  it('models-dev registry (v2) compiles deterministically with resolution evidence', () => {
+    const { execSync } = require('node:child_process') as typeof import('node:child_process')
+    const { readFileSync } = require('node:fs') as typeof import('node:fs')
+    const { createHash } = require('node:crypto') as typeof import('node:crypto')
+    execSync('bun scripts/registry-tools/compile-registry.ts', { cwd: process.cwd(), stdio: 'pipe' })
+    const first = readFileSync('src/generated/models-dev-registry.json', 'utf8')
+    execSync('bun scripts/registry-tools/compile-registry.ts', { cwd: process.cwd(), stdio: 'pipe' })
+    const second = readFileSync('src/generated/models-dev-registry.json', 'utf8')
+    const hash = (s: string) => createHash('sha256').update(s).digest('hex')
+    expect(hash(first)).toBe(hash(second))
+    const raw = JSON.parse(second)
+    expect(raw.schemaVersion).toBe(2)
+    expect(raw.registryVersion).toMatch(/^mdev-r[0-9a-f]{10}$/)
+    expect(raw.coverage.resolutionsApplied).toBeGreaterThan(0)
+  })
+
   it('registryVersion changes when a model is added (cache invalidation, design 37)', () => {
     // We assert the property: version is content-derived (hash prefix), so
     // we can rely on the compiler test. Here just confirm it exists and is
@@ -42,7 +59,7 @@ describe('registry deterministic build', () => {
     const { readdirSync } = require('node:fs') as typeof import('node:fs')
     const { join } = require('node:path') as typeof import('node:path')
     const sourceIds = new Set<string>()
-    for (const vendor of readdirSync('registry', { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'upstream')) {
+    for (const vendor of readdirSync('registry', { withFileTypes: true }).filter((d) => d.isDirectory() && d.name !== 'upstream' && d.name !== 'evidence')) {
       const dir = join('registry', vendor.name)
       for (const file of readdirSync(dir).filter((f) => f.endsWith('.json'))) {
         const raw = JSON.parse(readFileSync(join(dir, file), 'utf8'))

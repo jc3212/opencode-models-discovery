@@ -7,6 +7,18 @@
 - OpenCode version: 1.18.18
 - Node: v22.22.2 / Bun: 1.3.14
 
+## Simplified Configuration (second pass)
+- Date: 2026-08-17
+- Backup: `~/.config/opencode/opencode.json.backup-simplify-20260817T082734`
+- before sha256: `908c71446eb9e47ce97199285493f781133417b9eade0f0c8c137d4340fcff31`
+- after sha256: `71c04a08d2dc07edca7a01896d976713bca994979f5fe557499f23fdae39bc00`
+- Removed unreachable providers: coding-plan, relaycore, yunzhouapi
+- Cleared static models lists on: 2chat, ans-heidong, ans-tokenshop, dieqiyun, heidong, k3-free, openchat, tokenshop (runtime discovery now provides models)
+- Remaining providers: 2chat, alibaba-cn, ans-heidong, ans-tokenshop, dieqiyun, heidong, k3-free, openchat, opencode, openrouter, tokenshop
+- Remaining static models in config: 0
+- Validation after simplification: opencode models exit 0 (discovery injects models at runtime), audit runs, project tests 430 PASS
+- Note: relay availability varies; audit may show transient endpoint failures for some providers
+
 ## Configuration
 - Config path: `~/.config/opencode/opencode.json`
 - Backup path: `~/.config/opencode/opencode.json.backup-20260817T081553`

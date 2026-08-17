@@ -5,36 +5,6 @@
   "generatedAt": "2026-08-17",
   "resolutions": [
     {
-      "model": "openai/gpt-5.6",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "none"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "openai/gpt-5.4-mini",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "none"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "anthropic/claude-sonnet-5",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "xhigh"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
       "model": "anthropic/claude-fable-5",
       "kind": "md-extra",
       "prefer": "official-exact",
@@ -60,46 +30,6 @@
       "prefer": "official-exact",
       "mdOnlyValues": [
         "xhigh"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "anthropic/claude-opus-5",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "xhigh"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "google/gemini-3.5-flash",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "minimal"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "google/gemini-3.6-flash",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "minimal"
-      ],
-      "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
-      "resolvedAt": "2026-08-17"
-    },
-    {
-      "model": "google/gemini-3-flash",
-      "kind": "md-extra",
-      "prefer": "official-exact",
-      "mdOnlyValues": [
-        "minimal"
       ],
       "reason": "official curated effort set is authoritative; models.dev extra value(s) recorded in evidence, not adopted",
       "resolvedAt": "2026-08-17"

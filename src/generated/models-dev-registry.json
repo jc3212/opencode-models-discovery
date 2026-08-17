@@ -1,7 +1,7 @@
 {
   "_notice": "GENERATED - evidence-merged registry (G4.2-G4.4). Do not edit. Run: npm run registry:compile",
   "schemaVersion": 2,
-  "registryVersion": "mdev-rffaf7502fe",
+  "registryVersion": "mdev-radf90e0b6b",
   "source": {
     "models": "models.dev",
     "fetchedAt": "2026-08-17T04:50:01.871Z",

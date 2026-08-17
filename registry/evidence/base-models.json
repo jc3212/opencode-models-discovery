@@ -1,0 +1,21 @@
+{
+  "_notice": "G4.3 explicit base-model relations. Identity hints only - NEVER capability overrides. models.dev 2026-08 snapshot has no base_model field (linkedByBaseModel=0), so relations come from this evidence layer and are applied only to exact canonical matches.",
+  "schemaVersion": 1,
+  "updatedAt": "2026-08-17",
+  "relations": [
+    {
+      "model": "openai/gpt-5.4-mini",
+      "baseModel": "openai/gpt-5.4",
+      "confidence": "inferred",
+      "source": "vendor-family-naming",
+      "note": "models.dev names gpt-5.4-mini within the gpt-5.4 family (31 relay entries); identity hint only"
+    },
+    {
+      "model": "anthropic/claude-opus-4-6-thinking",
+      "baseModel": "anthropic/claude-opus-4-6",
+      "confidence": "high",
+      "source": "vendor-explicit",
+      "note": "thinking variant of the opus-4-6 model (official curated entry)"
+    }
+  ]
+}

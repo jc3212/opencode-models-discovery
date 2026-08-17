@@ -29,6 +29,7 @@ const OUT_FILE = join(OUT_DIR, 'reasoning-registry.json')
 const SNAPSHOT_FILE = join(OUT_DIR, 'models-dev-snapshot.json')
 const MDEV_OUT_FILE = join(OUT_DIR, 'models-dev-registry.json')
 const RESOLUTIONS_FILE = join(REGISTRY_DIR, 'evidence', 'resolutions.json')
+const BASE_MODELS_FILE = join(REGISTRY_DIR, 'evidence', 'base-models.json')
 
 /** Stable gate G2: unregistered vendor dir is a fail-closed build error. */
 export function findUnregisteredVendorDirs(registryRoot: string, vendorDirs: string[]): string[] {
@@ -111,6 +112,15 @@ function generateModelsDevRegistry(): void {
     : []
   const resolutionByModel = new Map(resolutions.map((r) => [r.model, r]))
 
+  // G4.3 base-model identity relations (evidence layer; identity hints only,
+  // NEVER capability overrides). snapshot may supply base_model in future syncs.
+  const baseRelations = existsSync(BASE_MODELS_FILE)
+    ? (JSON.parse(readFileSync(BASE_MODELS_FILE, 'utf8')) as { relations: Array<{ model: string; baseModel: string }> }).relations
+    : []
+  const baseByModel = new Map(baseRelations.map((r) => [r.model, r.baseModel]))
+  let baseModelFromSnapshot = 0
+  let baseModelFromEvidence = 0
+
   const mdByKey = new Map<string, { reasoning?: boolean; options: Array<{ type: string; values?: string[] }> }>()
   for (const pm of snapshot.providerModels) {
     mdByKey.set(pm.id, { reasoning: pm.reasoning, options: pm.reasoningOptions ?? [] })
@@ -129,6 +139,8 @@ function generateModelsDevRegistry(): void {
     const mdOptionControls = md?.options ?? []
     const cls = md ? classifyConflict(entry, md.reasoning, mdOptionControls) : { kind: 'compatible' as const }
     const conflictResolution = cls.kind === 'compatible' ? undefined : resolutionByModel.get(entry.model)
+    const evidenceBase = baseByModel.get(entry.model)
+    if (evidenceBase) baseModelFromEvidence++
     if (cls.kind !== 'compatible') {
       if (cls.kind === 'md-extra') summary.mdExtra++
       if (cls.kind === 'md-controls-only') summary.mdControlsOnly++
@@ -164,6 +176,7 @@ function generateModelsDevRegistry(): void {
 
     models.push({
       model: entry.model,
+      baseModel: evidenceBase,
       family: undefined,
       reasoning: {
         supported: entry.reasoning,
@@ -191,6 +204,7 @@ function generateModelsDevRegistry(): void {
     }]
     models.push({
       model: key,
+      family: undefined,
       family: undefined,
       reasoning: {
         supported: true,
@@ -221,6 +235,9 @@ function generateModelsDevRegistry(): void {
     controlsKnown: snapshotModels.filter((e) => (e.reasoningOptions?.length ?? 0) > 0).length,
     controlsUnknown: 0,
     unsupportedOptionTypes: [],
+    baseModelFromSnapshot,
+    baseModelFromEvidence,
+    baseModelRelationsDeclared: baseRelations.length,
     conflictsDuringBuild: summary.mdExtra + summary.mdControlsOnly + summary.flagConflict,
     resolutionsApplied: summary.resolutionsRequired,
     resolutionsRequired: summary.resolutionsRequired,
@@ -251,6 +268,10 @@ function generateModelsDevRegistry(): void {
     if (seenV2.has(m.model)) v2Errors.push('duplicate canonical ' + m.model)
     seenV2.add(m.model)
     if (m.evidence.length === 0) v2Errors.push('no evidence for ' + m.model)
+    if (m.baseModel !== undefined) {
+      if (!/^[a-z0-9-]+\/[a-z0-9._-]+$/i.test(m.baseModel)) v2Errors.push('malformed baseModel ' + m.baseModel + ' for ' + m.model)
+      if (m.baseModel === m.model) v2Errors.push('self-referencing baseModel for ' + m.model)
+    }
   }
   if (v2Errors.length > 0) {
     console.error('[registry-compile] FAIL: models-dev registry v2 validation:')
@@ -268,6 +289,9 @@ function generateModelsDevRegistry(): void {
     ' modelsDev=' + generated.models.filter((m) => m.layers.modelsDev).length +
     ' modelsDevOnly=' + generated.models.filter((m) => m.layers.modelsDev && !m.layers.official).length +
     ' inferred=' + generated.models.filter((m) => m.layers.inferred).length)
+  console.log('[registry-compile] G4.3 base-model audit: fromSnapshot=' + baseModelFromSnapshot +
+    ' fromEvidence=' + baseModelFromEvidence + ' declared=' + baseRelations.length +
+    ' (identity hints only - no capability override)')
 }
 
 // ------------------------------------------------------------ main -----

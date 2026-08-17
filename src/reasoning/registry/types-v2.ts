@@ -62,6 +62,12 @@ export interface ConflictResolutionV2 {
 export interface RegistryModelV2 {
   /** Canonical `vendor/model` id. */
   model: string
+  /**
+   * Base-model identity relation (G4.3). Identity hint only; NEVER used to
+   * override capabilities. Sources: snapshot base_model (when models.dev
+   * provides it) or registry/evidence/base-models.json explicit relations.
+   */
+  baseModel?: string
   family?: string
   reasoning: ReasoningCapabilityV2
   evidence: EvidenceV2[]
@@ -92,6 +98,12 @@ export interface ModelsDevRegistry {
     controlsKnown: number
     controlsUnknown: number
     unsupportedOptionTypes: string[]
+    /** base-model identity relations applied from the models.dev snapshot. */
+    baseModelFromSnapshot: number
+    /** base-model identity relations applied from registry/evidence/base-models.json. */
+    baseModelFromEvidence: number
+    /** Total base-model relations declared across layers (audit, G4 §34). */
+    baseModelRelationsDeclared: number
     conflictsDuringBuild: number
     resolutionsApplied: number
     resolutionsRequired: number

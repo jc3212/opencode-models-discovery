@@ -205,7 +205,7 @@ function generateModelsDevRegistry(): void {
       aliases: relayAliases.length > 0 ? relayAliases : undefined,
       identityResolution: 'vendor-known',
       relayCount: new Set(group?.entries.map((e) => e.key) ?? []).size || 1,
-      family: undefined,
+      family: evidenceBase,
       reasoning: {
         supported: entry.reasoning,
         controlsKnown: entry.controls.length > 0,
@@ -245,7 +245,7 @@ function generateModelsDevRegistry(): void {
         aliases: relayAliases.length > 0 ? relayAliases : undefined,
         identityResolution: 'anchor-match',
         relayCount: new Set(group.entries.map((e) => e.key)).size,
-        family: undefined,
+        family: baseByModel.get(canonical),
         reasoning: {
           supported: mdReasoningOf(canonical) === true,
           controlsKnown: options.length > 0,
@@ -400,6 +400,10 @@ function generateModelsDevRegistry(): void {
   console.log('[registry-compile] G4.3 base-model audit: fromSnapshot=' + baseModelFromSnapshot +
     ' fromEvidence=' + baseModelFromEvidence + ' declared=' + baseRelations.length +
     ' (identity hints only - no capability override)')
+  const familyGroups = new Map<string, number>()
+  for (const m of models) if (m.family) familyGroups.set(m.family, (familyGroups.get(m.family) ?? 0) + 1)
+  const familyList = [...familyGroups.entries()].map(([f, c]) => f + ' x' + c).join(', ')
+  console.log('[registry-compile] G4.5 family audit: members=' + [...familyGroups.values()].reduce((a, b) => a + b, 0) + ' groups=' + familyGroups.size + ((familyList && ' (' + familyList + ')') || ''))
   console.log('[registry-compile] G4.4 identity audit: vendor-known=' + identityVendorKnown +
     ' anchor-match=' + identityAnchorMatch + ' unresolved=' + identityUnresolved +
     ' relay-alias-entries=' + relayAliasTotal)

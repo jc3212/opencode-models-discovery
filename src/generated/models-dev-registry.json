@@ -1,7 +1,7 @@
 {
   "_notice": "GENERATED - evidence-merged registry (G4.2-G4.4). Do not edit. Run: npm run registry:compile",
   "schemaVersion": 2,
-  "registryVersion": "mdev-r93b2659a30",
+  "registryVersion": "mdev-r6abc201395",
   "source": {
     "models": "models.dev",
     "fetchedAt": "2026-08-17T04:50:01.871Z",
@@ -179,6 +179,7 @@
       ],
       "identityResolution": "vendor-known",
       "relayCount": 14,
+      "family": "openai/gpt-5.4",
       "reasoning": {
         "supported": true,
         "controlsKnown": true,
@@ -1026,6 +1027,7 @@
       ],
       "identityResolution": "vendor-known",
       "relayCount": 1,
+      "family": "anthropic/claude-opus-4-6",
       "reasoning": {
         "supported": true,
         "controlsKnown": true,

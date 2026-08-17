@@ -1,0 +1,1888 @@
+{
+  "$schema": "https://opencode.ai/config.json",
+  "agent": {
+    "architect": {
+      "description": "Software architecture specialist for system design, scalability, and technical decision-making.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/architect.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "build": {
+      "description": "Primary coding agent for development work",
+      "mode": "primary",
+      "model": "anthropic/claude-sonnet-4-5",
+      "tools": {
+        "bash": true,
+        "changed-files": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "build-error-resolver": {
+      "description": "Build and TypeScript error resolution specialist. Use when build fails or type errors occur. Fixes build/type errors only with minimal diffs.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/build-error-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "code-reviewer": {
+      "description": "Expert code review specialist. Reviews code for quality, security, and maintainability. Use immediately after writing or modifying code.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/code-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "cpp-build-resolver": {
+      "description": "C++ build, CMake, and compilation error resolution specialist. Fixes build errors, linker issues, and template errors with minimal changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/cpp-build-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "cpp-reviewer": {
+      "description": "Expert C++ code reviewer specializing in memory safety, modern C++ idioms, concurrency, and performance. Use for all C++ code changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/cpp-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "database-reviewer": {
+      "description": "PostgreSQL database specialist for query optimization, schema design, security, and performance. Incorporates Supabase best practices.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/database-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "doc-updater": {
+      "description": "Documentation and codemap specialist. Use for updating codemaps and documentation.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/doc-updater.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "docs-lookup": {
+      "description": "Documentation specialist using Context7 MCP to fetch current library and API documentation with code examples.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/docs-lookup.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "e2e-runner": {
+      "description": "End-to-end testing specialist using Playwright. Generates, maintains, and runs E2E tests for critical user flows.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/e2e-runner.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "go-build-resolver": {
+      "description": "Go build, vet, and compilation error resolution specialist. Fixes Go build errors with minimal changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/go-build-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "go-reviewer": {
+      "description": "Expert Go code reviewer specializing in idiomatic Go, concurrency patterns, error handling, and performance.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/go-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "harness-optimizer": {
+      "description": "Analyze and improve the local agent harness configuration for reliability, cost, and throughput.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/harness-optimizer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true
+      }
+    },
+    "java-build-resolver": {
+      "description": "Java/Maven/Gradle build, compilation, and dependency error resolution specialist. Fixes build errors with minimal changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/java-build-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "java-reviewer": {
+      "description": "Expert Java and Spring Boot code reviewer specializing in layered architecture, JPA patterns, security, and concurrency.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/java-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "kotlin-build-resolver": {
+      "description": "Kotlin/Gradle build, compilation, and dependency error resolution specialist. Fixes Kotlin build errors with minimal changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/kotlin-build-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "kotlin-reviewer": {
+      "description": "Kotlin and Android/KMP code reviewer. Reviews Kotlin code for idiomatic patterns, coroutine safety, Compose best practices.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/kotlin-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "loop-operator": {
+      "description": "Operate autonomous agent loops, monitor progress, and intervene safely when loops stall.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/loop-operator.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true
+      }
+    },
+    "php-reviewer": {
+      "description": "Expert PHP code reviewer specializing in PSR-12 compliance, PHP type system, Eloquent ORM patterns, security, and performance.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/php-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "planner": {
+      "description": "Expert planning specialist for complex features and refactoring. Use for implementation planning, architectural changes, or complex refactoring.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/planner.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "python-reviewer": {
+      "description": "Expert Python code reviewer specializing in PEP 8 compliance, Pythonic idioms, type hints, security, and performance.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/python-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "refactor-cleaner": {
+      "description": "Dead code cleanup and consolidation specialist. Use for removing unused code, duplicates, and refactoring.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/refactor-cleaner.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "rust-build-resolver": {
+      "description": "Rust build, Cargo, and compilation error resolution specialist. Fixes Rust build errors with minimal changes.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/rust-build-resolver.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "rust-reviewer": {
+      "description": "Expert Rust code reviewer specializing in idiomatic Rust, ownership, lifetimes, concurrency, and performance.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/rust-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": false,
+        "read": true,
+        "write": false
+      }
+    },
+    "security-reviewer": {
+      "description": "Security vulnerability detection and remediation specialist. Use after writing code that handles user input, authentication, API endpoints, or sensitive data.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/security-reviewer.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    },
+    "tdd-guide": {
+      "description": "Test-Driven Development specialist enforcing write-tests-first methodology. Use when writing new features, fixing bugs, or refactoring code. Ensures 80%+ test coverage.",
+      "mode": "subagent",
+      "prompt": "{file:prompts/agents/tdd-guide.txt}",
+      "tools": {
+        "bash": true,
+        "edit": true,
+        "read": true,
+        "write": true
+      }
+    }
+  },
+  "command": {
+    "build-fix": {
+      "agent": "build-error-resolver",
+      "description": "Fix build and TypeScript errors with minimal changes",
+      "subtask": true,
+      "template": "{file:commands/build-fix.md}\n\n$ARGUMENTS"
+    },
+    "checkpoint": {
+      "description": "Save verification state and progress",
+      "template": "{file:commands/checkpoint.md}\n\n$ARGUMENTS"
+    },
+    "code-review": {
+      "agent": "code-reviewer",
+      "description": "Review code for quality, security, and maintainability",
+      "subtask": true,
+      "template": "{file:commands/code-review.md}\n\n$ARGUMENTS"
+    },
+    "e2e": {
+      "agent": "e2e-runner",
+      "description": "Generate and run E2E tests with Playwright",
+      "subtask": true,
+      "template": "{file:commands/e2e.md}\n\n$ARGUMENTS"
+    },
+    "eval": {
+      "description": "Run evaluation against criteria",
+      "template": "{file:commands/eval.md}\n\n$ARGUMENTS"
+    },
+    "evolve": {
+      "description": "Cluster instincts into skills",
+      "template": "{file:commands/evolve.md}\n\n$ARGUMENTS"
+    },
+    "go-build": {
+      "agent": "go-build-resolver",
+      "description": "Fix Go build errors",
+      "subtask": true,
+      "template": "{file:commands/go-build.md}\n\n$ARGUMENTS"
+    },
+    "go-review": {
+      "agent": "go-reviewer",
+      "description": "Go code review",
+      "subtask": true,
+      "template": "{file:commands/go-review.md}\n\n$ARGUMENTS"
+    },
+    "go-test": {
+      "agent": "tdd-guide",
+      "description": "Go TDD workflow",
+      "subtask": true,
+      "template": "{file:commands/go-test.md}\n\n$ARGUMENTS"
+    },
+    "instinct-export": {
+      "description": "Export instincts",
+      "template": "{file:commands/instinct-export.md}\n\n$ARGUMENTS"
+    },
+    "instinct-import": {
+      "description": "Import instincts",
+      "template": "{file:commands/instinct-import.md}\n\n$ARGUMENTS"
+    },
+    "instinct-status": {
+      "description": "View learned instincts",
+      "template": "{file:commands/instinct-status.md}\n\n$ARGUMENTS"
+    },
+    "learn": {
+      "description": "Extract patterns and learnings from session",
+      "template": "{file:commands/learn.md}\n\n$ARGUMENTS"
+    },
+    "orchestrate": {
+      "agent": "planner",
+      "description": "Orchestrate multiple agents for complex tasks",
+      "subtask": true,
+      "template": "{file:commands/orchestrate.md}\n\n$ARGUMENTS"
+    },
+    "plan": {
+      "agent": "planner",
+      "description": "Create a detailed implementation plan for complex features",
+      "subtask": true,
+      "template": "{file:commands/plan.md}\n\n$ARGUMENTS"
+    },
+    "projects": {
+      "description": "List known projects and instinct stats",
+      "template": "{file:commands/projects.md}\n\n$ARGUMENTS"
+    },
+    "promote": {
+      "description": "Promote project instincts to global scope",
+      "template": "{file:commands/promote.md}\n\n$ARGUMENTS"
+    },
+    "refactor-clean": {
+      "agent": "refactor-cleaner",
+      "description": "Remove dead code and consolidate duplicates",
+      "subtask": true,
+      "template": "{file:commands/refactor-clean.md}\n\n$ARGUMENTS"
+    },
+    "security": {
+      "agent": "security-reviewer",
+      "description": "Run comprehensive security review",
+      "subtask": true,
+      "template": "{file:commands/security.md}\n\n$ARGUMENTS"
+    },
+    "setup-pm": {
+      "description": "Configure package manager",
+      "template": "{file:commands/setup-pm.md}\n\n$ARGUMENTS"
+    },
+    "skill-create": {
+      "description": "Generate skills from git history",
+      "template": "{file:commands/skill-create.md}\n\n$ARGUMENTS"
+    },
+    "tdd": {
+      "agent": "tdd-guide",
+      "description": "Enforce TDD workflow with 80%+ test coverage",
+      "subtask": true,
+      "template": "{file:commands/tdd.md}\n\n$ARGUMENTS"
+    },
+    "test-coverage": {
+      "agent": "tdd-guide",
+      "description": "Analyze test coverage",
+      "subtask": true,
+      "template": "{file:commands/test-coverage.md}\n\n$ARGUMENTS"
+    },
+    "update-codemaps": {
+      "agent": "doc-updater",
+      "description": "Update codemaps",
+      "subtask": true,
+      "template": "{file:commands/update-codemaps.md}\n\n$ARGUMENTS"
+    },
+    "update-docs": {
+      "agent": "doc-updater",
+      "description": "Update documentation",
+      "subtask": true,
+      "template": "{file:commands/update-docs.md}\n\n$ARGUMENTS"
+    },
+    "verify": {
+      "description": "Run verification loop",
+      "template": "{file:commands/verify.md}\n\n$ARGUMENTS"
+    }
+  },
+  "compaction": {
+    "auto": true,
+    "prune": false,
+    "reserved": 20000
+  },
+  "default_agent": "build",
+  "instructions": [
+    "~/.config/opencode/instructions/mcp-routing.md",
+    "instructions/INSTRUCTIONS.md",
+    "skills/tdd-workflow/SKILL.md",
+    "skills/security-review/SKILL.md",
+    "skills/e2e-testing/SKILL.md",
+    "skills/verification-loop/SKILL.md",
+    "skills/strategic-compact/SKILL.md",
+    "skills/eval-harness/SKILL.md"
+  ],
+  "mcp": {
+    "anysearch": {
+      "enabled": true,
+      "headers": {
+        "X-Anysearch-Client": "mcp/1.0.0"
+      },
+      "type": "remote",
+      "url": "https://api.anysearch.com/mcp"
+    },
+    "context7": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://mcp.context7.com/mcp"
+    },
+    "exa": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa"
+    },
+    "github": {
+      "enabled": true,
+      "headers": {
+        "Authorization": "***REDACTED***",
+        "X-MCP-Readonly": "true",
+        "X-MCP-Toolsets": "repos,issues,pull_requests"
+      },
+      "type": "remote",
+      "url": "https://api.githubcopilot.com/mcp/"
+    },
+    "image-tools": {
+      "command": [
+        "/home/chen/.local/bin/image-tools-mcp"
+      ],
+      "enabled": true,
+      "type": "local"
+    },
+    "imagesorcery": {
+      "command": [
+        "/home/chen/.local/share/imagesorcery-mcp-venv/bin/imagesorcery-mcp"
+      ],
+      "enabled": true,
+      "type": "local"
+    },
+    "paper-search": {
+      "command": [
+        "uv",
+        "tool",
+        "run",
+        "paper-search-mcp"
+      ],
+      "enabled": true,
+      "environment": {
+        "PAPER_SEARCH_MCP_CORE_API_KEY": "***REDACTED***",
+        "PAPER_SEARCH_MCP_SEMANTIC_SCHOLAR_API_KEY": "***REDACTED***",
+        "PAPER_SEARCH_MCP_UNPAYWALL_EMAIL": "{env:PAPER_SEARCH_MCP_UNPAYWALL_EMAIL}",
+        "PAPER_SEARCH_MCP_ZENODO_ACCESS_TOKEN": "***REDACTED***"
+      },
+      "type": "local"
+    },
+    "websearch": {
+      "enabled": true,
+      "type": "remote",
+      "url": "https://mcp.exa.ai/mcp?tools=web_search_exa"
+    }
+  },
+  "model": "yunzhouapi/gpt-5.6-terra",
+  "permission": {
+    "mcp_*": "ask",
+    "skill": {
+      "*": "ask",
+      "skill-creator": "allow"
+    }
+  },
+  "plugin": [
+    "./plugins",
+    "@tarquinen/opencode-dcp@3.1.14",
+    [
+      "@prevalentware/opencode-goal-plugin@0.1.29",
+      {
+        "allow_goal_execution_from_plan": false,
+        "auto_continue": false,
+        "defer_while_tasks_active": true,
+        "max_auto_turns": 0,
+        "restricted_agents": [
+          "plan"
+        ]
+      }
+    ],
+    "/home/chen/Program/opencode_set/omd-plugin-install/node_modules/opencode-models-discovery"
+  ],
+  "provider": {
+    "2chat": {
+      "models": {
+        "gpt-5.5": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        }
+      },
+      "name": "2Chat",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "https://2chat.cc/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "alibaba-cn": {
+      "whitelist": [
+        "qwen3.8-max",
+        "qwen3.7-max",
+        "qwen3.7-plus",
+        "qwen3.7-flash",
+        "qwen3.6-max-preview",
+        "qwen3-coder-plus",
+        "deepseek-v4-pro",
+        "deepseek-v4-flash",
+        "glm-5.2",
+        "kimi-k2.6"
+      ]
+    },
+    "ans-heidong": {
+      "models": {
+        "claude-haiku-4-5-20251001": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE HAIKU 4.5",
+          "variants": {
+            "high": {
+              "thinking": {
+                "budgetTokens": "***REDACTED***",
+                "type": "enabled"
+              }
+            },
+            "low": {
+              "thinking": {
+                "budgetTokens": "***REDACTED***",
+                "type": "enabled"
+              }
+            },
+            "max": {
+              "thinking": {
+                "budgetTokens": "***REDACTED***",
+                "type": "enabled"
+              }
+            },
+            "medium": {
+              "thinking": {
+                "budgetTokens": "***REDACTED***",
+                "type": "enabled"
+              }
+            },
+            "off": {
+              "thinking": {
+                "type": "disabled"
+              }
+            }
+          }
+        },
+        "claude-opus-4-6": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE OPUS 4.6",
+          "variants": {
+            "high": {
+              "effort": "high",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "low": {
+              "effort": "low",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "max": {
+              "effort": "max",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "medium": {
+              "effort": "medium",
+              "thinking": {
+                "type": "adaptive"
+              }
+            }
+          }
+        },
+        "claude-opus-4-7": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE OPUS 4.7",
+          "variants": {
+            "high": {
+              "effort": "high",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "low": {
+              "effort": "low",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "max": {
+              "effort": "max",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "medium": {
+              "effort": "medium",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "xhigh": {
+              "effort": "xhigh",
+              "thinking": {
+                "type": "adaptive"
+              }
+            }
+          }
+        },
+        "claude-opus-4-8": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE OPUS 4.8",
+          "variants": {
+            "high": {
+              "effort": "high",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "low": {
+              "effort": "low",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "max": {
+              "effort": "max",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "medium": {
+              "effort": "medium",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "xhigh": {
+              "effort": "xhigh",
+              "thinking": {
+                "type": "adaptive"
+              }
+            }
+          }
+        },
+        "claude-opus-5": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE OPUS 5",
+          "variants": {
+            "high": {
+              "effort": "high",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "low": {
+              "effort": "low",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "max": {
+              "effort": "max",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "medium": {
+              "effort": "medium",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "xhigh": {
+              "effort": "xhigh",
+              "thinking": {
+                "type": "adaptive"
+              }
+            }
+          }
+        },
+        "claude-sonnet-5": {
+          "limit": {
+            "context": 200000,
+            "output": 32000
+          },
+          "name": "CLAUDE SONNET 5",
+          "variants": {
+            "high": {
+              "effort": "high",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "low": {
+              "effort": "low",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "max": {
+              "effort": "max",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "medium": {
+              "effort": "medium",
+              "thinking": {
+                "type": "adaptive"
+              }
+            },
+            "xhigh": {
+              "effort": "xhigh",
+              "thinking": {
+                "type": "adaptive"
+              }
+            }
+          }
+        },
+        "deepseek-v4-flash": {
+          "interleaved": {
+            "field": "reasoning_content"
+          },
+          "limit": {
+            "context": 1000000,
+            "output": 384000
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "DeepSeek V4 Flash 0731",
+          "reasoning": true,
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            }
+          }
+        }
+      },
+      "name": "黑洞Anthropic",
+      "npm": "@ai-sdk/anthropic",
+      "options": {
+        "baseURL": "https://www.text168.com/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "ans-tokenshop": "***REDACTED***",
+    "coding-plan": {
+      "models": {
+        "ark-code-latest": {
+          "name": "ark-code-latest"
+        },
+        "deepseek-v4-flash": {
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "deepseek-v4-flash",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "deepseek-v4-pro": {
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "deepseek-v4-pro",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "doubao-seed-2.0-code": {
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "doubao-seed-2.0-code",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "doubao-seed-2.0-lite": {
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image",
+              "video",
+              "audio"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "doubao-seed-2.0-lite",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "doubao-seed-2.0-pro": {
+          "limit": {
+            "context": 262144,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text",
+              "image",
+              "video"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "doubao-seed-2.0-pro",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "doubao-seed-code": {
+          "name": "doubao-seed-code"
+        },
+        "glm-5.2": {
+          "limit": {
+            "context": 1048576,
+            "output": 65536
+          },
+          "modalities": {
+            "input": [
+              "text"
+            ],
+            "output": [
+              "text"
+            ]
+          },
+          "name": "glm-5.2",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "kimi-k2.6": {
+          "name": "kimi-k2.6",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "kimi-k2.7-code": {
+          "name": "kimi-k2.7-code",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "minimax-m2.7": {
+          "name": "minimax-m2.7",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        },
+        "minimax-m3": {
+          "name": "minimax-m3",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        }
+      },
+      "name": "Volcano Engine (Coding Plan)",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://ark.cn-beijing.volces.com/api/coding/v3"
+      }
+    },
+    "dieqiyun": {
+      "models": {
+        "gpt-5.5": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "grok-4.5": {
+          "limit": {
+            "context": 500000,
+            "output": 500000
+          },
+          "name": "Grok 4.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            }
+          }
+        }
+      },
+      "name": "蝶祈云",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://hgapi.dieqiyun.top/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "heidong": {
+      "models": {
+        "gpt-5.5": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        }
+      },
+      "name": "黑洞API",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "https://www.text168.com/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "k3-free": {
+      "models": {
+        "glm-5.2-free": {
+          "name": "glm-5.2-free"
+        },
+        "kimi-k3-free": {
+          "name": "kimi-k3-free"
+        }
+      },
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "apiKey": "***REDACTED***",
+        "baseURL": "https://hgapi.dieqiyun.top",
+        "setCacheKey": "***REDACTED***",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "openchat": {
+      "models": {
+        "claude-opus-4-8": {
+          "name": "Claude Opus 4.8"
+        },
+        "claude-sonnet-5": {
+          "name": "Claude Sonnet 5"
+        },
+        "gemini-3.1-pro-high": {
+          "name": "Gemini 3.1 Pro High"
+        },
+        "gemini-3.1-pro-low": {
+          "name": "Gemini 3.1 Pro Low"
+        },
+        "gemini-3.5-flash": {
+          "name": "Gemini 3.5 Flash"
+        },
+        "gpt-5.5-xhigh": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5 XHigh"
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "grok-4": {
+          "name": "Grok 4"
+        },
+        "grok-420-fast": {
+          "name": "Grok 4.20 Fast"
+        },
+        "grok-420-thinking": {
+          "name": "Grok 4.20 Thinking"
+        }
+      },
+      "name": "OpenChat 中转站",
+      "npm": "@ai-sdk/openai-compatible",
+      "options": {
+        "baseURL": "https://api.openclawplan.com/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    },
+    "opencode": {
+      "whitelist": [
+        "deepseek-v4-flash-free",
+        "mimo-v2.5-free",
+        "ling-3.0-flash-free",
+        "nemotron-3-ultra-free",
+        "north-mini-code-free",
+        "laguna-s-2.1-free"
+      ]
+    },
+    "openrouter": {
+      "whitelist": [
+        "google/gemma-4-26b-a4b-it:free",
+        "google/gemma-4-31b-it:free"
+      ]
+    },
+    "relaycore": {
+      "models": {
+        "gpt-5.5": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        }
+      },
+      "name": "RelayCore",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "https://api.relaycore.cn/v1"
+      }
+    },
+    "tokenshop": "***REDACTED***",
+    "yunzhouapi": {
+      "models": {
+        "gpt-5.5": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.5",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-luna": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Luna",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-sol": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Sol",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "gpt-5.6-terra": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "GPT 5.6 Terra",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {
+              "reasoningEffort": "high"
+            },
+            "low": {
+              "reasoningEffort": "low"
+            },
+            "max": {
+              "reasoningEffort": "max"
+            },
+            "medium": {
+              "reasoningEffort": "medium"
+            },
+            "ultra": {
+              "reasoningEffort": "ultra"
+            },
+            "xhigh": {
+              "reasoningEffort": "xhigh"
+            }
+          }
+        },
+        "lite/kimi-k3": {
+          "limit": {
+            "context": 272000,
+            "output": 128000
+          },
+          "name": "K3",
+          "options": {
+            "store": false
+          },
+          "variants": {
+            "high": {},
+            "low": {},
+            "medium": {},
+            "xhigh": {}
+          }
+        }
+      },
+      "name": "独角兽API",
+      "npm": "@ai-sdk/openai",
+      "options": {
+        "baseURL": "https://relay.nccnxta.cn/v1",
+        "modelsDiscovery": {
+          "enabled": true,
+          "reasoning": {
+            "enabled": true,
+            "capabilityPolicy": "official-model",
+            "transport": "auto"
+          }
+        }
+      }
+    }
+  }
+}

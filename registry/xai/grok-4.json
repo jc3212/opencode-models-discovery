@@ -1,0 +1,28 @@
+{
+  "model": "xai/grok-4",
+  "aliases": [
+    "grok-4"
+  ],
+  "reasoning": true,
+  "controls": [
+    {
+      "type": "effort",
+      "values": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium"
+    }
+  ],
+  "sources": [
+    {
+      "type": "official-doc",
+      "vendor": "xai",
+      "verifiedAt": "2026-08-16",
+      "url": "https://docs.x.ai/docs/models"
+    }
+  ],
+  "updatedAt": "2026-08-16",
+  "schemaVersion": 1
+}

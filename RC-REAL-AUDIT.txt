@@ -15,7 +15,7 @@ Provider ans-tokenshop (api.tokenshop.homes)
 
 Provider coding-plan (ark.cn-beijing.volces.com) - models endpoint failed
 Provider dieqiyun (hgapi.dieqiyun.top)
-  Models: 4
+  Models: 5
   Variants generated (current runtime): 0
 
 Provider heidong (www.text168.com)
@@ -41,19 +41,19 @@ Provider yunzhouapi (relay.nccnxta.cn) - models endpoint failed
 --- summary ---
 Providers configured: 11
 Providers reachable: 8
-Models discovered: 82
+Models discovered: 83
 
-Identity resolved: 59
+Identity resolved: 64
   Canonical exact: 0
-  Registry alias: 59
+  Registry alias: 64
   Safe revision: 0
   User alias: 0
   Ambiguous: 0
-Registry missing: 15
+Registry missing: 11
 Alias required: 8
 
-Capability resolved (official): 59
-Not reasoning (no official entry): 23
-Transport resolved: 82
+Capability resolved (official): 64
+Not reasoning (no official entry): 19
+Transport resolved: 83
 Transport unknown: 0
 Variants generated (current runtime): 0

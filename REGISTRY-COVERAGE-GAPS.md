@@ -1,37 +1,57 @@
-# REGISTRY-COVERAGE-GAPS
+# Registry Coverage Gaps
 
-Generated from the real provider audit. Unmatched models classified per design §28-29.
+Generated from the real RC audit (design §23, §28-32). Updated 2026-08-17.
 
-| Model | Category | Action |
-|---|---|---|
-| codex-auto-review | B | registry alias only if proven same model; otherwise user alias |
-| claude-fable-5 | A | official model - registry update required |
-| claude-opus-4-5-20251101 | A | official model - registry update required |
-| claude-sonnet-4-5-20250929 | A | official model - registry update required |
-| claude-haiku-4-5-20251001 | A | official model - registry update required |
-| auto | D | unknown identity - cannot verify |
-| claude-haiku-4-5 | A | official model - registry update required |
-| claude-haiku-4.5 | A | official model - registry update required |
-| claude-opus-4-5 | A | official model - registry update required |
-| claude-opus-4.5 | A | official model - registry update required |
-| claude-sonnet-4 | A | official model - registry update required |
-| claude-sonnet-4-5 | A | official model - registry update required |
-| claude-sonnet-4.5 | A | official model - registry update required |
-| claude-opus-4-6-thinking | A | official model - registry update required |
-| gemini-3.1-pro-high | A | official model - registry update required |
-| gemini-3.1-pro-low | A | official model - registry update required |
-| gpt-5.4-xhigh | B | registry alias only if proven same model; otherwise user alias |
-| gpt-5.5-xhigh | B | registry alias only if proven same model; otherwise user alias |
-| gpt-image-2 | A | official model - registry update required |
-| gpt-image-2-vip | B | registry alias only if proven same model; otherwise user alias |
-| grok-3 | A | official model - registry update required |
-| grok-4 | A | official model - registry update required |
-| grok-420-fast | A | official model - registry update required |
-| grok-420-thinking | A | official model - registry update required |
+Current registry: 37 models (registryVersion rfb947323e7)
 
-## Notes
+## Classification
 
-- A: official model, add registry entry from official docs.
-- B: official model with a name variance - add registry alias only when proven identical; no fuzzy matching.
-- C: user/relay custom name - user alias only; never add to the global registry.
-- D: cannot confirm identity.
+- **A - Official model, registry missing**: confirmed official entries still to add
+- **B - Official model, alias missing**: official model exists under a different stable name
+- **C - Relay/user custom alias**: never add to the global registry; user alias required
+- **D - Ambiguous model identity**: do not guess
+- **E - Explicitly not reasoning**: no registry entry expected
+- **F - Unknown/unverifiable**: cannot confirm identity
+
+## A - Official model, registry missing
+
+_none currently confirmed_
+
+## B - Official model, alias missing
+
+_none currently confirmed_
+
+## C - Relay/user custom alias (user alias required)
+
+| Model | Providers | Why | Action |
+|-------|-----------|-----|--------|
+| claude-sonnet-4 | k3-free | non-standard short form, no official doc | user alias |
+| claude-haiku-4.5 | k3-free | dot-form variant, not the official dash form | user alias |
+| claude-opus-4.5 | k3-free | dot-form variant | user alias |
+| grok-420-fast / grok-420-thinking | openchat | custom relay naming, not official grok IDs | user alias |
+| gpt-image-2-vip | openchat | 'vip' suffix is relay branding | user alias |
+| auto | k3-free | relay sentinel model | user alias / ignore |
+
+## E - Explicitly not reasoning
+
+| Model | Why |
+|-------|-----|
+| gpt-image-2 | image generation model, no text reasoning |
+
+## F - Unknown/unverifiable
+
+| Model | Why |
+|-------|-----|
+| codex-auto-review | official Codex model id not confirmed; registry entry omitted |
+
+## Recently added A-class entries
+
+| Model | Canonical | Values |
+|-------|-----------|--------|
+| gemini-3.1-pro-high | google/gemini-3.1-pro-high | high |
+| gemini-3.1-pro-low | google/gemini-3.1-pro-low | low |
+| gpt-5.4-xhigh | openai/gpt-5.4-xhigh | xhigh |
+| gpt-5.5-xhigh | openai/gpt-5.5-xhigh | xhigh |
+| grok-3 | xai/grok-3 | low, medium, high |
+| grok-4 | xai/grok-4 | low, medium, high |
+

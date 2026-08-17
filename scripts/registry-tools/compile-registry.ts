@@ -101,6 +101,28 @@ export function classifyConflict(
   return { kind: 'compatible' }
 }
 
+// S1 - accepted/effective effort separation (evidence-driven, no guessing).
+function toV2Controls(
+  controls: Array<{ type: string; values?: string[]; default?: string; aliases?: Record<string, string> }>,
+  source: 'official' | 'models-dev',
+): ReasoningControlV2[] {
+  return controls.map((c) => {
+    if (c.type !== 'effort') return c as ReasoningControlV2
+    const accepted = [...new Set([...(c.values ?? []), ...Object.keys(c.aliases ?? {})])]
+    return {
+      type: 'effort',
+      values: c.values ?? [],
+      acceptedValues: accepted,
+      // effective values come only from an official/curated record; models.dev
+      // observations stay accepted-only until evidence confirms semantics.
+      effectiveValues: source === 'official' ? (c.values ?? []) : undefined,
+      normalization: c.aliases ?? undefined,
+      default: c.default,
+      evidenceRefs: [],
+    } as ReasoningControlV2
+  })
+}
+
 function generateModelsDevRegistry(): void {
   if (!existsSync(SNAPSHOT_FILE)) {
     console.log('[registry-compile] no models.dev snapshot; skipped models-dev registry')
@@ -209,7 +231,7 @@ function generateModelsDevRegistry(): void {
       reasoning: {
         supported: entry.reasoning,
         controlsKnown: entry.controls.length > 0,
-        controls: entry.controls,
+        controls: toV2Controls(entry.controls, 'official'),
         evidenceRefs: evidence.map((e) => e.id),
       },
       evidence,
@@ -249,7 +271,7 @@ function generateModelsDevRegistry(): void {
         reasoning: {
           supported: mdReasoningOf(canonical) === true,
           controlsKnown: options.length > 0,
-          controls: options,
+          controls: toV2Controls(options, 'models-dev'),
           evidenceRefs: evidence.map((e) => e.id),
         },
         evidence,
@@ -281,7 +303,7 @@ function generateModelsDevRegistry(): void {
           reasoning: {
             supported: true,
             controlsKnown: options.length > 0,
-            controls: options,
+            controls: toV2Controls(options, 'models-dev'),
             evidenceRefs: evidence.map((e2) => e2.id),
           },
           evidence,
@@ -315,7 +337,7 @@ function generateModelsDevRegistry(): void {
       reasoning: {
         supported: true,
         controlsKnown: (m.reasoningOptions?.length ?? 0) > 0,
-        controls: (m.reasoningOptions ?? []) as ReasoningControl[],
+        controls: toV2Controls(m.reasoningOptions ?? [], 'models-dev'),
         evidenceRefs: evidence.map((e) => e.id),
       },
       evidence,

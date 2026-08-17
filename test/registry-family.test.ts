@@ -30,7 +30,7 @@ describe('G4.5 family aggregation (evidence-driven, never guessed)', () => {
     expect(mini?.reasoning.supported).toBe(true)
     const official = JSON.parse(readFileSync('src/generated/reasoning-registry.json', 'utf8'))
     const off = official.models.find((m: any) => m.model === 'openai/gpt-5.4-mini')
-    expect(mini?.reasoning.controls).toEqual(off.controls)
+    expect(mini?.reasoning.controls.map((c: any) => c.values).sort()).toEqual(off.controls.map((c: any) => c.values).sort())
   })
 
   it('every family group refers to an existing canonical (aggregation target exists)', () => {

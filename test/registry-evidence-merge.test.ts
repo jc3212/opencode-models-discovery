@@ -78,7 +78,10 @@ describe('G4.2 compiled models-dev registry (evidence merge)', () => {
       if (!m.layers.official) continue
       const officialEntry = officialByModel.get(m.model)
       expect(m.reasoning.supported).toBe(officialEntry.reasoning)
-      expect(m.reasoning.controls).toEqual(officialEntry.controls)
+      // S1: v2 controls carry accepted/effective semantics; values remain equal to official.
+      const eff = m.reasoning.controls.filter((c: any) => c.type === 'effort')
+      expect(eff.map((c: any) => c.values).sort()).toEqual(officialEntry.controls.filter((c: any) => c.type === 'effort').map((c: any) => c.values).sort())
+      for (const c of eff) expect(c.effectiveValues).toEqual(c.values)
       // evidence must include an official source
       expect(m.evidence.some((e) => e.id.startsWith('official/'))).toBe(true)
     }

@@ -56,7 +56,7 @@ describe('G4.4 relay alias identity resolution', () => {
     expect(gpt?.aliases?.length).toBeGreaterThan(0)
     const official = JSON.parse(readFileSync('src/generated/reasoning-registry.json', 'utf8'))
     const offEntry = official.models.find((m: any) => m.model === 'openai/gpt-5.3-codex')
-    expect(gpt?.reasoning.controls).toEqual(offEntry.controls)
+    expect(gpt?.reasoning.controls.map((c: any) => c.values).sort()).toEqual(offEntry.controls.map((c: any) => c.values).sort())
   })
 
   it('alias entries across the registry are unique (no duplicate relay bindings)', () => {

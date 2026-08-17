@@ -10,6 +10,27 @@
 
 import type { ReasoningControl } from './types'
 
+/**
+ * S1 - Effort control with accepted vs effective semantics separated.
+ *
+ * Runtime variant generation must come from effectiveValues. acceptedValues
+ * records every value the upstream/provider accepts (including compatibility
+ * aliases) but does NOT by itself mean an independent reasoning strength.
+ * normalization maps accepted -> effective only when evidence establishes it.
+ */
+export interface ReasoningEffortControlV2 {
+  type: 'effort'
+  /** Back-compat: equals effectiveValues when known, otherwise acceptedValues. */
+  values: string[]
+  acceptedValues: string[]
+  effectiveValues?: string[]
+  normalization?: Record<string, string>
+  default?: string
+  evidenceRefs?: string[]
+}
+
+export type ReasoningControlV2 = ReasoningEffortControlV2 | Extract<ReasoningControl, { type: 'toggle' | 'budget_tokens' }>
+
 /** v2 schema version for evidence-merged registry. */
 export const REGISTRY_SCHEMA_VERSION_V2 = 2
 
@@ -40,7 +61,7 @@ export interface EvidenceV2 {
 export interface ReasoningCapabilityV2 {
   supported: boolean
   controlsKnown: boolean
-  controls: ReasoningControl[]
+  controls: ReasoningControlV2[]
   evidenceRefs: string[]
 }
 

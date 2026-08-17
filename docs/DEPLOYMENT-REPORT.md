@@ -19,6 +19,17 @@
 - Validation after simplification: opencode models exit 0 (discovery injects models at runtime), audit runs, project tests 430 PASS
 - Note: relay availability varies; audit may show transient endpoint failures for some providers
 
+## Relay restore (third pass)
+- Date: 2026-08-17
+- Restored from `opencode.json.backup-simplify-20260817T082734`:
+  - `relaycore` (4 static models, modelsDiscovery not enabled - original state)
+  - `yunzhouapi` (5 static models, modelsDiscovery enabled - original state)
+- Pre-restore backup: `opencode.json.backup-restore-relays-20260817T083024`
+- after sha256 (restored): `c191daab05fae33d7d917a343622c6b68c8d167049aa56d939faff61b51b9998`
+- Current providers: 2chat, alibaba-cn, ans-heidong, ans-tokenshop, dieqiyun, heidong, k3-free, openchat, opencode, openrouter, tokenshop, relaycore, yunzhouapi
+- coding-plan remains removed (not requested for restore)
+- Validation: JSON parse PASS; opencode models exit 0 (relaycore/yunzhouapi models visible); audit runs (their relay endpoints still report failed - Relay-side availability)
+
 ## Configuration
 - Config path: `~/.config/opencode/opencode.json`
 - Backup path: `~/.config/opencode/opencode.json.backup-20260817T081553`

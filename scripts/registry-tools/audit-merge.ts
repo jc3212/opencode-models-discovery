@@ -93,6 +93,45 @@ if (fam.length === 0) {
   for (const m of fam) md.push('- ' + m.model + ' in family ' + m.family)
 }
 md.push('')
+// S1 minimal effort semantics audit.
+let minimalModels = 0
+let minimalOfficialConfirmed = 0
+let minimalModelsDevOnly = 0
+let minimalNormalized = 0
+let minimalEffectiveIndependent = 0
+let minimalConflict = 0
+for (const m of ids) {
+  let hasMinimalAccepted = false
+  let hasMinimalEffective = false
+  for (const c of m.reasoning.controls ?? []) {
+    if (c.type !== 'effort') continue
+    if ((c.acceptedValues ?? []).includes('minimal')) hasMinimalAccepted = true
+    if ((c.effectiveValues ?? []).includes('minimal')) hasMinimalEffective = true
+  }
+  if (!hasMinimalAccepted) continue
+  minimalModels++
+  if (m.layers.official) minimalOfficialConfirmed++
+  else minimalModelsDevOnly++
+  if (hasMinimalEffective) minimalEffectiveIndependent++
+  if (m.conflictResolution) minimalConflict++
+  // normalization that maps minimal elsewhere (currently none without evidence)
+  for (const c of m.reasoning.controls ?? []) {
+    if (c.type === 'effort' && c.normalization && c.normalization['minimal']) minimalNormalized++
+  }
+}
+
+md.push('')
+md.push('## S1 reasoning semantics (accepted vs effective)')
+md.push('')
+md.push('| Metric | Value |')
+md.push('|---|---|')
+md.push('| minimal records | ' + minimalModels + ' |')
+md.push('| official semantic confirmed | ' + minimalOfficialConfirmed + ' |')
+md.push('| models.dev only (semantic unknown) | ' + minimalModelsDevOnly + ' |')
+md.push('| normalized to another level | ' + minimalNormalized + ' |')
+md.push('| independent effective level | ' + minimalEffectiveIndependent + ' |')
+md.push('| conflicts | ' + minimalConflict + ' |')
+md.push('')
 md.push('## Data gaps & notes')
 md.push('')
 md.push('- models.dev base_model absent in the 2026-08 snapshot (see above).')

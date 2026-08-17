@@ -1,0 +1,20 @@
+REAL RELAY SMOKE REPORT
+generated: 2026-08-17T02:21:52.698Z
+
+2chat | gpt-5.4 | high | ACCEPTED-UNVERIFIED | 2xx 200 2149ms
+2chat | gpt-5.5 | medium | ACCEPTED-UNVERIFIED | 2xx 200 6601ms
+tokenshop | gpt-5.4 | medium | ACCEPTED-UNVERIFIED | 2xx 200 2613ms (reasoning ref in body)
+openchat | gpt-5.4 | high | ACCEPTED-UNVERIFIED | 2xx 200 802ms
+openchat | claude-opus-4-6 | high | ACCEPTED-UNVERIFIED | 2xx 200 273ms
+openchat | gemini-3.1-pro-preview | high | ACCEPTED-UNVERIFIED | 2xx 200 271ms
+ans-heidong | claude-opus-4-6 | medium | UNREACHABLE | 503 4480ms
+
+SUMMARY
+Tested: 7
+PASS: 0
+REJECTED: 0
+ACCEPTED-UNVERIFIED: 6
+UNREACHABLE: 1
+
+NOTE: PASS/ACCEPTED-UNVERIFIED do not prove the relay honors the
+reasoning effort. Relay Forwarding remains UNVERIFIED unless proven.

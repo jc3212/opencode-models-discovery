@@ -218,7 +218,7 @@ providerDiscoveryConfig.reasoning?.enabled !== false   // 用户开关（默认�
   3. 重建 dist，打包 E2E 复验 grok-4 → low/medium/high variants。
 - 意义：这是「Registry 缺失导致错误无档位」的 release 级缺陷，被 RC 观察环节捕获——正是分阶段发布的收益。
 
-### 5.4 [P2] 未知 host 的 transport 解析
+### 5.4 [P2] 未知 host 的 transport 解析（已被 G1 修复覆盖，见 §6.5）
 - 现象：openchat（api.openclawplan.com）、dieqiyun（hgapi.dieqiyun.top）、k3-free 的模型 transport=unknown，variants=[]。
 - 定性：**不是 Registry 缺失**（capabilitySource 均为 official-registry），是 host 不在已知 profile → 保守不注入（预期行为，§11/§23）。
 - 处置：保持 `transport: auto` 不动；若用户确认某 relay 走 openai-compatible 传输，再按 provider 显式指定（不全局改）。
@@ -276,7 +276,57 @@ Models discovered: 75
 Identity resolved: 61（registry alias 61；canonical exact 0；user alias 0）
 Registry missing: 9        ·  alias required: 5
 Capability resolved: 61    ·  not reasoning: 14
-Transport resolved: 75     ·  transport unknown: 0
+Ingress transport resolved: 72 · unknown: 0
+Compile transport resolved: 37  · compile unknown: 35  ← 与运行时 variants=[] 一致
+Baseline: plugin 1.5.0-rc.1 / commit 9068fcf / registry rea758d2465 / opencode 1.18.18 / config hash 1199224d36ec
+```
+
+---
+
+## 6.5 Stable 门禁加固（G1-G3，2026-08-17 完成）
+
+针对发布评审提出的三项门禁，全部实现并回归通过：
+
+### G1 诊断语义一致性（PASS）
+- **问题**：旧 audit 的 "Transport resolved: 75 / unknown: 0" 与运行时 variants=[] 矛盾。
+  根因：CLI 统计用 `resolveRelayAware().ingress`（relay 入站协议），而运行时编译门控用
+  `resolveReasoningTransport`（出站语义）；两者是不同层，旧指标把 ingress 误标为 transport。
+- **修复**：CLI 复用运行时同一 resolver（`src/reasoning/transport.ts`），指标拆分为：
+  ```
+  Ingress transport resolved: 72   （入站协议已知）
+  Ingress transport unknown: 0
+  Compile transport resolved: 37   （可编译 variants 的模型数）
+  Compile transport unknown: 35    （openchat/dieqiyun/k3-free 等，对应 variants=[]）
+  ```
+  verbose 模式保留 reason/source；基线追加 plugin version/commit、registryVersion、
+  OpenCode version、脱敏 config hash（sha256-12）。
+- **原则**：CLI、运行时 enrichment、测试共享同一个 compile transport resolver，禁止第三套判断。
+
+### G2 Registry 完整性（PASS）
+- 新增 exact set equality：source canonical model set === generated canonical model set，
+  失败时打印 set difference（missing/unexpected/duplicate），不再只比较 count。
+- 编译期 fail-closed：`findUnregisteredVendorDirs` 检测 registry/ 下未登记 VENDOR_DIRS 的目录，
+  直接以非零退出（防止 xai 类静默丢弃复发）。
+- validator 已覆盖 identity namespace：canonical 唯一、alias 唯一且不得撞 canonical id、
+  effort default/target 合法。user alias 歧义在运行时配置域单独检测，不进 Registry validator。
+
+### G3 不可信输入加固（PASS）
+- `sanitizeDiscoveredModels`：非 string/空 id 丢弃、id 长度上限 200、列表上限 2000、
+  重复 id 确定性去重（首现保留）、`__proto__/constructor/prototype` 原型污染键丢弃、
+  malformed JSON / 非预期 shape fail-open（不抛异常）。
+- `isValidModel` 改为严格 boolean 返回。
+- 新增 8 项回归测试（test/untrusted-input.test.ts）。
+
+### 门禁判定
+```
+G1 Diagnostics semantic consistency       PASS
+G2 Registry source/artifact integrity      PASS
+G2 Registry identity namespace integrity  PASS
+G3 Discovery bounded + fail-open           PASS
+G3 Untrusted input basic hardening         PASS
+Full regression 378 tests (49 files)      PASS
+typecheck / lint (src)                    PASS
+Real audit baseline regenerated           PASS
 ```
 
 ---

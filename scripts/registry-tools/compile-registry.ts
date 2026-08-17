@@ -22,6 +22,20 @@ const REGISTRY_DIR = join(ROOT, 'registry')
 const OUT_DIR = join(ROOT, 'src', 'generated')
 const OUT_FILE = join(OUT_DIR, 'reasoning-registry.json')
 
+/**
+ * Release invariant (Stable gate G2): a Registry source directory that is
+ * NOT in VENDOR_DIRS is a fail-closed build error. This catches the xai
+ * class of bug (source present, compiler silently never reads it) at
+ * compile time instead of at runtime via missing variants.
+ */
+export function findUnregisteredVendorDirs(registryRoot: string, vendorDirs: string[]): string[] {
+  if (!existsSync(registryRoot)) return []
+  return readdirSync(registryRoot, { withFileTypes: true })
+    .filter((d) => d.isDirectory() && !d.name.startsWith('.'))
+    .map((d) => d.name)
+    .filter((name) => !vendorDirs.includes(name))
+}
+
 const VENDOR_DIRS = [
   'openai', 'anthropic', 'google', 'deepseek', 'zai', 'xai', 'alibaba', 'moonshot',
 ]
@@ -52,6 +66,13 @@ function contentHash(models: OfficialReasoningCapability[]): string {
 }
 
 function main(): void {
+  const unregistered = findUnregisteredVendorDirs(join(ROOT, 'registry'), VENDOR_DIRS)
+  if (unregistered.length > 0) {
+    console.error('[registry-compile] FAIL: registry source dirs not in VENDOR_DIRS (possible silent drop):')
+    for (const dir of unregistered) console.error('  - ' + dir)
+    console.error('Add the vendor dir to VENDOR_DIRS in compile-registry.ts, then re-compile.')
+    process.exit(1)
+  }
   const entries = collectEntries()
 
   const registryVersion = 'r' + contentHash(entries)
@@ -62,12 +83,20 @@ function main(): void {
     models: entries,
   }
 
+  const sourceSet = new Set(entries.map((e) => e.model))
   const validation = validateRegistry(registry)
   if (!validation.valid) {
     console.error('[registry-compile] INVALID registry:')
     for (const error of validation.errors) {
       console.error('  - ' + error)
     }
+    process.exit(1)
+  }
+
+  if (sourceSet.size !== entries.length) {
+    const dupes = entries.map((e) => e.model).filter((m, i, a) => a.indexOf(m) !== i)
+    console.error('[registry-compile] FAIL: duplicate canonical model ids in source:')
+    for (const d of [...new Set(dupes)]) console.error('  - ' + d)
     process.exit(1)
   }
 

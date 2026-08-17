@@ -4,6 +4,19 @@ import type { OpenAIModel, OpenAIModelsResponse } from '../types'
 
 const OPENAI_COMPATIBLE_MODELS_ENDPOINT = "/v1/models"
 export const DEFAULT_REQUEST_TIMEOUT_MS = 3000
+
+/**
+ * Untrusted-input bounds for third-party relay /v1/models responses
+ * (Stable gate G3). Relay model lists are hostile input: they may be huge,
+ * malformed, contain duplicate/oversized ids, or prototype-polluting keys.
+ * These limits keep a single relay from exhausting memory or corrupting the
+ * injected model map. They are intentionally conservative and only drop
+ * entries that can never be a usable OpenAI-compatible model id.
+ */
+export const MAX_MODEL_ID_LENGTH = 200
+export const MAX_DISCOVERED_MODELS = 2000
+/** Object keys that would mutate Object.prototype if used as config keys. */
+const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
 const REQUEST_USER_AGENT = 'opencode-models-discovery'
 
 export interface ModelsDiscoveryResult {
@@ -87,7 +100,41 @@ export async function discoverModelsFromProvider(
   }
 
   const data = await requestJson<OpenAIModelsResponse>(url, headers, timeoutMs)
-  return data ? { ok: true, models: data.data ?? [] } : { ok: false, models: [] }
+  if (!data) return { ok: false, models: [] }
+  return { ok: true, models: sanitizeDiscoveredModels(data.data) }
+}
+
+/**
+ * Sanitizes a raw /v1/models payload into a bounded, de-duplicated list of
+ * usable model entries (design §30, Stable gate G3).
+ *
+ * Rules:
+ * - entry must be a plain object with a non-empty string `id`
+ * - id length capped at MAX_MODEL_ID_LENGTH
+ * - prototype-pollution keys (__proto__/constructor/prototype) are dropped
+ * - duplicate ids are de-duplicated deterministically (first occurrence wins)
+ * - list capped at MAX_DISCOVERED_MODELS (fail-open excess drop)
+ *
+ * Never throws: a hostile relay payload must fail-open, not break startup.
+ */
+export function sanitizeDiscoveredModels(raw: unknown): OpenAIModel[] {
+  if (!Array.isArray(raw)) return []
+  const seen = new Set<string>()
+  const out: OpenAIModel[] = []
+  for (const entry of raw) {
+    if (out.length >= MAX_DISCOVERED_MODELS) break
+    if (!entry || typeof entry !== 'object' || Array.isArray(entry)) continue
+    const id = (entry as { id?: unknown }).id
+    if (typeof id !== 'string') continue
+    const trimmed = id.trim()
+    if (trimmed.length === 0) continue
+    if (trimmed.length > MAX_MODEL_ID_LENGTH) continue
+    if (PROTOTYPE_POLLUTION_KEYS.has(trimmed)) continue
+    if (seen.has(trimmed)) continue
+    seen.add(trimmed)
+    out.push({ ...(entry as Record<string, unknown>), id: trimmed } as OpenAIModel)
+  }
+  return out
 }
 
 export async function discoverModelInfoFromProvider(
@@ -139,7 +186,7 @@ export function canDiscoverModels(provider: any): boolean {
 }
 
 export function isValidModel(model: any): model is { id: string; [key: string]: any } {
-  return model &&
+  return !!model &&
          typeof model === 'object' &&
          typeof model.id === 'string' &&
          model.id.length > 0

@@ -115,7 +115,7 @@ async function main(): Promise<void> {
   console.log('Reasoning Audit')
   console.log('')
 
-  const totals = { models: 0, identityResolved: 0, registryMatched: 0, variantsGenerated: 0, registryMissing: 0, aliasRequired: 0, transportUnknown: 0, ambiguous: 0 }
+  const totals = { models: 0, identityResolved: 0, registryMatched: 0, variantsGenerated: 0, registryMissing: 0, aliasRequired: 0, transportUnknown: 0, ambiguous: 0, capabilityResolved: 0, transportResolved: 0, providersConfigured: 0, providersReachable: 0, notReasoning: 0 }
   const identityCounts: Record<string, number> = {}
 
   for (const providerId of providerIds) {
@@ -129,12 +129,14 @@ async function main(): Promise<void> {
       continue
     }
 
+    totals.providersConfigured++
     const apiKey = resolveApiKey(providerId, provider)
     const result = await discoverModelsFromProvider(baseURL, apiKey, discovery?.endpoint ?? '/v1/models', discovery?.timeoutMs ?? 3000)
     if (!result.ok) {
       console.log(`Provider ${providerId} (${host ?? 'unknown'}) - models endpoint failed`)
       continue
     }
+    totals.providersReachable++
 
     const models = result.models.filter(isValidModel)
     const userAliases = discovery?.reasoning?.aliases
@@ -157,12 +159,15 @@ async function main(): Promise<void> {
 
       // Three-layer facts (design §22).
       const capabilitySource = registryMatch ? 'OFFICIAL' : 'UNKNOWN'
+      if (registryMatch) totals.capabilityResolved++
+      if (!registryMatch) totals.notReasoning++
       const relayShadow = resolveRelayAware({
         providerId, npm: provider?.npm, baseURL, modelId: model.id, rawModel: model,
         modelsDevIndex, aliases: userAliases, relayConfig: discovery?.reasoning?.relay,
       })
       const transportKnown = relayShadow.ingress !== 'unknown' || discovery?.reasoning?.transport !== 'auto'
       if (!transportKnown) totals.transportUnknown++
+      else totals.transportResolved++
 
       if (verbose) {
         console.log(`  Model: ${model.id}`)
@@ -189,15 +194,24 @@ async function main(): Promise<void> {
   }
 
   console.log('--- summary ---')
-  console.log(`Providers: ${providerIds.filter((id) => providers[id]?.options?.baseURL).length}`)
-  console.log(`Models: ${totals.models}`)
+  console.log(`Providers configured: ${totals.providersConfigured}`)
+  console.log(`Providers reachable: ${totals.providersReachable}`)
+  console.log(`Models discovered: ${totals.models}`)
+  console.log('')
   console.log(`Identity resolved: ${totals.identityResolved}`)
-  console.log(`Official registry matched: ${totals.registryMatched}`)
-  console.log(`Variants generated: ${totals.variantsGenerated}`)
+  console.log(`  Canonical exact: ${identityCounts['canonical-exact'] ?? 0}`)
+  console.log(`  Registry alias: ${identityCounts['registry-alias'] ?? 0}`)
+  console.log(`  Safe revision: ${identityCounts['safe-revision'] ?? 0}`)
+  console.log(`  User alias: ${identityCounts['user-alias'] ?? 0}`)
+  console.log(`  Ambiguous: ${totals.ambiguous}`)
   console.log(`Registry missing: ${totals.registryMissing}`)
   console.log(`Alias required: ${totals.aliasRequired}`)
+  console.log('')
+  console.log(`Capability resolved (official): ${totals.capabilityResolved}`)
+  console.log(`Not reasoning (no official entry): ${totals.notReasoning}`)
+  console.log(`Transport resolved: ${totals.transportResolved}`)
   console.log(`Transport unknown: ${totals.transportUnknown}`)
-  console.log(`Ambiguous: ${totals.ambiguous}`)
+  console.log(`Variants generated (current runtime): ${totals.variantsGenerated}`)
 }
 
 main().catch((error) => {

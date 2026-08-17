@@ -1,0 +1,13 @@
+feat(audit): full RC audit baseline with identity/capability breakdown
+
+Phase 5 (design 20-22):
+- cli summary now reports: providers configured/reachable, models,
+  identity breakdown (canonical exact / registry alias / safe revision /
+  user alias / ambiguous), registry missing, alias required,
+  capability resolved, not reasoning, transport resolved/unknown,
+  variants generated (current runtime)
+- RC-REAL-AUDIT.txt regenerated from the release dist CLI:
+  11 configured / 8-9 reachable / 88 models / 64 identity resolved
+  (all registry alias), 16 registry missing, 8 alias required,
+  24 not reasoning, 0 transport unknown
+- every unresolved model has an explicit reason; no bare UNKNOWN

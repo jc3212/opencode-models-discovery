@@ -12,8 +12,8 @@
  */
 
 import { readFileSync, existsSync } from 'fs'
-import { createRequire } from 'node:module'
-import { join } from 'node:path'
+import path, { join } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { normalizeBaseURL, discoverModelsFromProvider, isValidModel } from './utils/openai-compatible-api'
 import { fetchModelsDevData } from './utils/models-dev-fetcher'
 import { resolveReasoningForModel } from './reasoning/enricher'
@@ -24,15 +24,28 @@ import { buildReasoningCoverageReport } from './reasoning/coverage'
 import type { ProviderDiscoveryConfig } from './types/plugin-config'
 import type { ResolvedReasoning } from './reasoning/types'
 
-const require = createRequire(import.meta.url)
 const verbose = process.argv.includes('--verbose')
 
 function loadBundledRegistry() {
+  // Works both for the packaged dist/cli.js and the source src/cli.ts:
+  // both resolve <package>/src/generated/reasoning-registry.json.
   try {
-    return loadRegistry(require('./generated/reasoning-registry.json'))
+    const dir = path.dirname(fileURLToPath(import.meta.url))
+    const candidates = [
+      path.join(dir, '../src/generated/reasoning-registry.json'),
+      path.join(dir, 'generated/reasoning-registry.json'),
+      path.join(dir, '../dist/generated/reasoning-registry.json'),
+    ]
+    for (const candidate of candidates) {
+      if (existsSync(candidate)) {
+        const registry = loadRegistry(JSON.parse(readFileSync(candidate, 'utf8')))
+        if (registry) return registry
+      }
+    }
   } catch {
-    return undefined
+    /* fail-open: audit proceeds without registry */
   }
+  return undefined
 }
 
 function hostnameOnly(baseURL: string | undefined): string | undefined {

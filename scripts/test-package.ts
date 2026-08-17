@@ -30,6 +30,7 @@ const REQUIRED = [
   'package/LICENSE',
   'package/src/index.ts',
   'package/src/generated/reasoning-registry.json',
+  'package/dist/cli.js',
   'package/src/reasoning/enricher.ts',
   'package/src/utils/models-dev-fetcher.ts',
 ]

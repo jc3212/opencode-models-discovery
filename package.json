@@ -6,7 +6,7 @@
   "type": "module",
   "main": "./src/index.ts",
   "bin": {
-    "opencode-models-discovery": "./scripts/audit-cli.ts"
+    "opencode-models-discovery": "./src/cli.ts"
   },
   "exports": {
     ".": "./src/index.ts"

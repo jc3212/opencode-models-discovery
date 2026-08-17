@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+#!/usr/bin/env bun
 /**
  * opencode-models-discovery audit CLI (design §33-36, §23-27).
  *

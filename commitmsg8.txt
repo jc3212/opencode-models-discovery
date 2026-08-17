@@ -1,0 +1,8 @@
+fix(cli): bin runs from installed tarball
+
+- bin points to ./src/cli.ts (in files:["src"]), not the missing
+  scripts/audit-cli.ts
+- cli.ts shebang is #!/usr/bin/env bun (package ships TS source; OpenCode
+  and the CLI run under bun; Node 22 cannot type-strip node_modules .ts)
+- Verified end-to-end: installed the tarball, node_modules/.bin/
+  opencode-models-discovery runs, reads real config, 0 secrets in output

@@ -1,0 +1,11 @@
+docs(release): final RC release report
+
+Phase 53: FINAL RC RELEASE REPORT written to docs/FINAL-RC-REPORT.md
+- Version 1.5.0-rc.1, HEAD 797261d, tag v1.5.0-rc.1
+- 369 tests, typecheck+lint clean, 64-file tarball
+- SHA-256 eefa8e74...d643372
+- CLI node-only (bun-less verified)
+- 3 relays smoke tested, 6 accepted-unverified / 0 rejected
+- 66 identity resolved / 0 transport unknown / 8 alias required
+- Release blockers: NONE
+- Recommendation: READY FOR RC

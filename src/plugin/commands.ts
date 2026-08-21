@@ -5,7 +5,7 @@ export const CONFIG_COMMAND_NAME = 'models-discovery:config'
 
 export const MIGRATION_COMMAND_TEMPLATE = `Use the customize-opencode skill.
 
-Migrate opencode-models-discovery legacy global configuration to provider-level configuration.
+Migrate @jc3212/opencode-models-discovery legacy global configuration to provider-level configuration.
 
 Inspect both:
 - the project OpenCode config: opencode.json, opencode.jsonc, or .opencode/opencode.json under the current project/worktree
@@ -15,9 +15,9 @@ If OPENCODE_CONFIG is set and points to a file, inspect that custom config file 
 
 Do not edit managed or organization-controlled config unless the user explicitly asks for it. Managed config locations are platform-specific, including /Library/Application Support/opencode/ on macOS, /etc/opencode/ on Linux, and %ProgramData%\\opencode on Windows.
 
-Find the OpenCode config file that declares the opencode-models-discovery plugin and also contains legacy plugin-level options for that plugin.
+Find the OpenCode config file that declares the @jc3212/opencode-models-discovery plugin and also contains legacy plugin-level options for that plugin.
 
-Legacy opencode-models-discovery options are:
+Legacy @jc3212/opencode-models-discovery options are:
 - discovery.enabled
 - providers.include
 - providers.exclude
@@ -61,7 +61,7 @@ After editing config, remind the user to quit and restart opencode.`
 
 export const CONFIG_COMMAND_TEMPLATE = `Use the customize-opencode skill.
 
-Help configure opencode-models-discovery using the recommended provider-level configuration style.
+Help configure @jc3212/opencode-models-discovery using the recommended provider-level configuration style.
 
 Inspect both:
 - the project OpenCode config: opencode.json, opencode.jsonc, or .opencode/opencode.json under the current project/worktree
@@ -71,7 +71,7 @@ If OPENCODE_CONFIG is set and points to a file, inspect that custom config file 
 
 Do not edit managed or organization-controlled config unless the user explicitly asks for it. Managed config locations are platform-specific, including /Library/Application Support/opencode/ on macOS, /etc/opencode/ on Linux, and %ProgramData%\\opencode on Windows.
 
-Find the OpenCode config file that declares the opencode-models-discovery plugin, or ask the user whether the plugin should be added to project or user global config if it is not configured yet.
+Find the OpenCode config file that declares the @jc3212/opencode-models-discovery plugin, or ask the user whether the plugin should be added to project or user global config if it is not configured yet.
 
 Use provider-level configuration under provider.<id>.options.modelsDiscovery. Prefer this shape:
 
@@ -153,7 +153,7 @@ Recommended defaults:
 - the persisted discovery cache belongs to this plugin and is not a replacement for opencode.json
 
 When the user asks to manage the persisted discovery cache:
-- identify the selected provider from editable OpenCode configuration, then resolve the plugin data directory with xdg-basedir (XDG_DATA_HOME when set, otherwise its platform fallback) and inspect only opencode-models-discovery/providers/provider-<encoded-provider-id>.json beneath it
+- identify the selected provider from editable OpenCode configuration, then resolve the plugin data directory with xdg-basedir (XDG_DATA_HOME when set, otherwise its platform fallback) and inspect only @jc3212/opencode-models-discovery/providers/provider-<encoded-provider-id>.json beneath it
 - before editing, show cached models, last successful fetch time, cache TTL validity, and existing overrides
 - model overrides are provider-owned configuration fragments applied only while that model exists in the current valid cached model set; an override for a missing model remains saved but inactive until the provider returns it
 - ask for confirmation before removing an override or invalidating/removing cached models
@@ -215,7 +215,7 @@ export function injectMigrationCommand(config: any, logger: PluginLogger): void 
     logger,
     MIGRATION_COMMAND_NAME,
     {
-      description: 'Migrate opencode-models-discovery config',
+      description: 'Migrate @jc3212/opencode-models-discovery config',
       agent: 'build',
       template: MIGRATION_COMMAND_TEMPLATE,
     },
@@ -229,7 +229,7 @@ export function injectConfigCommand(config: any, logger: PluginLogger): void {
     logger,
     CONFIG_COMMAND_NAME,
     {
-      description: 'Configure opencode-models-discovery',
+      description: 'Configure @jc3212/opencode-models-discovery',
       agent: 'build',
       template: CONFIG_COMMAND_TEMPLATE,
     },

@@ -89,7 +89,7 @@ Older or unsupported cache schema versions are cache misses. The plugin refreshe
 Each provider cache is stored at:
 
 ```text
-${XDG_DATA_HOME}/opencode-models-discovery/providers/provider-<encoded-provider-id>.json
+${XDG_DATA_HOME}/@jc3212/opencode-models-discovery/providers/provider-<encoded-provider-id>.json
 ```
 
 When `XDG_DATA_HOME` is unset, the plugin uses the `xdg-basedir` `xdgData` fallback. Provider IDs are encoded before forming a file name, so a raw provider ID is never used directly as a path component.

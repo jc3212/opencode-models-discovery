@@ -12,7 +12,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -56,7 +56,7 @@ Each provider can configure discovery behavior through `provider.<name>.options.
 
 Recommended approach:
 
-1. Keep the plugin entry simple: `"plugin": ["opencode-models-discovery"]`.
+1. Keep the plugin entry simple: `"plugin": ["@jc3212/opencode-models-discovery"]`.
 2. Put endpoint, enablement, and model filtering rules on each provider.
 3. Use `modelsDiscovery.endpoint` whenever a provider does not follow the usual `/v1/models` convention.
 4. Use OpenCode `/connect` credentials or `provider.<name>.options.apiKey` for secrets; do not duplicate API keys unless needed.
@@ -91,7 +91,7 @@ This allows up to `15000` milliseconds for each discovery request to `slow-gatew
 Caching is disabled unless `modelsDiscovery.cache.enabled` is explicitly `true`. When enabled, a provider's latest successful filtered and metadata-enriched discovered model configurations are cached in plugin-owned XDG data at:
 
 ```text
-${XDG_DATA_HOME}/opencode-models-discovery/providers/provider-<encoded-provider-id>.json
+${XDG_DATA_HOME}/@jc3212/opencode-models-discovery/providers/provider-<encoded-provider-id>.json
 ```
 
 When `XDG_DATA_HOME` is unset, the plugin uses the `xdg-basedir` data-directory fallback. Provider ids are encoded before being used in file names. Cache files are never written to OpenCode or Mimocode auth locations, including `${xdgData}/opencode/auth.json` and `${xdgData}/mimocode/auth.json`.
@@ -263,7 +263,7 @@ Use `modelInfoFormat: "omniroute"` for an [OmniRoute](https://github.com/diegoso
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "omniroute": {
       "npm": "@ai-sdk/openai-compatible",
@@ -291,7 +291,7 @@ Use `modelInfoFormat: "bifrost"` for a Bifrost AI Gateway provider. It reads Bif
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "bifrost": {
       "npm": "@ai-sdk/openai-compatible",
@@ -321,7 +321,7 @@ Set `modelInfoFormat` to `"litellm"` to enable it. The plugin requests `/v1/mode
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "litellm": {
       "npm": "@ai-sdk/openai-compatible",
@@ -353,7 +353,7 @@ Use `modelInfoFormat: "vllm"` for a vLLM-compatible provider whose `/v1/models` 
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "local-vllm": {
       "npm": "@ai-sdk/openai-compatible",
@@ -381,7 +381,7 @@ Use `modelInfoFormat: "lmstudio"` with LM Studio 0.4.0+, which officially releas
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -413,7 +413,7 @@ This does not require `modelInfoEndpoint`, because the source is fixed to `https
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "openrouter": {
       "npm": "@ai-sdk/openai-compatible",
@@ -480,7 +480,7 @@ For providers with custom metadata paths or non-standard behavior:
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -530,7 +530,7 @@ In this example:
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -606,7 +606,7 @@ Legacy plugin-level provider filters are ignored in `1.0.0` and are shown here o
 ```json
 {
   "plugin": [
-    ["opencode-models-discovery", {
+    ["@jc3212/opencode-models-discovery", {
       "providers": {
         "include": ["ollama"],
         "exclude": ["lmstudio"]

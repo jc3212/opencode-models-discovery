@@ -37,7 +37,7 @@ function main(): void {
   // Install tarball into a fresh project (no node_modules reuse).
   execSync(`npm init -y >/dev/null 2>&1 && npm install --no-audit --no-fund --cache ${join(ROOT, 'npm-cache')} ${join(PACK_DIR, tarball)}`, { cwd: workRoot, stdio: 'pipe' })
 
-  const installed = join(workRoot, 'node_modules/opencode-models-discovery')
+  const installed = join(workRoot, 'node_modules/@jc3212/opencode-models-discovery')
   if (!existsSync(installed)) throw new Error('clean install: package not installed')
 
   // Verify the bundled registry is loadable from the installed package.

@@ -8,7 +8,7 @@ automatic variants are generated** until the transport is certain.
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "my-gateway": {
       "npm": "@ai-sdk/openai-compatible",

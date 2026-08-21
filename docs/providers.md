@@ -63,7 +63,7 @@ A provider is considered discoverable if it matches any detection signal above, 
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "ollama": {
       "npm": "@ai-sdk/openai-compatible",
@@ -80,7 +80,7 @@ A provider is considered discoverable if it matches any detection signal above, 
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "ollama-anthropic": {
       "npm": "@ai-sdk/anthropic",
@@ -97,7 +97,7 @@ A provider is considered discoverable if it matches any detection signal above, 
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "lmstudio": {
       "npm": "@ai-sdk/openai-compatible",
@@ -118,7 +118,7 @@ A provider is considered discoverable if it matches any detection signal above, 
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "deepseek": {
       "npm": "@ai-sdk/openai-compatible",
@@ -140,7 +140,7 @@ For a local server or gateway that needs longer to respond, set `modelsDiscovery
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "slow-gateway": {
       "npm": "@ai-sdk/openai-compatible",
@@ -164,7 +164,7 @@ Providers that expose only a minimal OpenAI-compatible `/v1/models` response can
 
 ```json
 {
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "openrouter": {
       "npm": "@ai-sdk/openai-compatible",

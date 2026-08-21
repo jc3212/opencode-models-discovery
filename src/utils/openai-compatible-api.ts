@@ -17,7 +17,7 @@ export const MAX_MODEL_ID_LENGTH = 200
 export const MAX_DISCOVERED_MODELS = 2000
 /** Object keys that would mutate Object.prototype if used as config keys. */
 const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-const REQUEST_USER_AGENT = 'opencode-models-discovery'
+const REQUEST_USER_AGENT = 'opencode-models-discovery-jc3212'
 
 export interface ModelsDiscoveryResult {
   ok: boolean

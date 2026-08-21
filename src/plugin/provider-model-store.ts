@@ -4,7 +4,7 @@ import { xdgData } from 'xdg-basedir'
 import { isValidModel } from '../utils/openai-compatible-api'
 
 const STATE_VERSION = 2
-const PLUGIN_DATA_DIRECTORY = 'opencode-models-discovery'
+const PLUGIN_DATA_DIRECTORY = '@jc3212/opencode-models-discovery'
 const PROVIDERS_DIRECTORY = 'providers'
 
 export interface ProviderModelStoreIdentity {

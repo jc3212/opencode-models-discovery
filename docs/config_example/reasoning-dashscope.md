@@ -6,7 +6,7 @@ OpenAI-compatible thinking interface.
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "dashscope": {
       "npm": "@ai-sdk/openai-compatible",

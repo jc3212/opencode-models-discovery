@@ -33,7 +33,7 @@ Legacy global `models.includeRegex` and `models.excludeRegex` can map to provide
 
 ## Refresh Plugin Cache After Upgrade
 
-If you upgrade `opencode-models-discovery` and OpenCode still behaves like it is using an older version, refresh the OpenCode plugin cache and restart OpenCode.
+If you upgrade `@jc3212/opencode-models-discovery` and OpenCode still behaves like it is using an older version, refresh the OpenCode plugin cache and restart OpenCode.
 
 This is worth checking when:
 

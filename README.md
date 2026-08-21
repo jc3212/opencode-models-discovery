@@ -1,9 +1,9 @@
-# opencode-models-discovery
+# @jc3212/opencode-models-discovery
 
-[![npm version](https://img.shields.io/npm/v/opencode-models-discovery.svg?color=blue)](https://www.npmjs.com/package/opencode-models-discovery)
-[![npm downloads](https://img.shields.io/npm/dt/opencode-models-discovery.svg)](https://www.npmjs.com/package/opencode-models-discovery)
-[![release](https://github.com/jc3212/opencode-models-discovery/actions/workflows/release.yml/badge.svg)](https://github.com/jc3212/opencode-models-discovery/actions/workflows/release.yml)
-[![license](https://img.shields.io/github/license/jc3212/opencode-models-discovery)](https://github.com/jc3212/opencode-models-discovery/blob/main/LICENSE)
+[![npm version](https://img.shields.io/npm/v/@jc3212%2F@jc3212/opencode-models-discovery.svg?color=blue)](https://www.npmjs.com/package/@jc3212/@jc3212/opencode-models-discovery)
+[![npm downloads](https://img.shields.io/npm/dt/@jc3212%2F@jc3212/opencode-models-discovery.svg)](https://www.npmjs.com/package/@jc3212/@jc3212/opencode-models-discovery)
+[![release](https://github.com/jc3212/@jc3212/opencode-models-discovery/actions/workflows/release.yml/badge.svg)](https://github.com/jc3212/@jc3212/opencode-models-discovery/actions/workflows/release.yml)
+[![license](https://img.shields.io/github/license/jc3212/@jc3212/opencode-models-discovery)](https://github.com/jc3212/@jc3212/opencode-models-discovery/blob/main/LICENSE)
 [![OpenCode](https://img.shields.io/badge/OpenCode-%3E%3D1.4.0-blueviolet)](https://opencode.ai)
 
 > A universal OpenCode plugin for dynamic model discovery across any OpenAI-compatible provider.
@@ -25,9 +25,9 @@ Originally inspired by [opencode-lmstudio](https://github.com/nicktasios/opencod
 ## Installation
 
 ```bash
-npm install opencode-models-discovery
+npm install @jc3212/opencode-models-discovery
 # or
-bun add opencode-models-discovery
+bun add @jc3212/opencode-models-discovery
 ```
 
 ## Quick Start
@@ -38,7 +38,7 @@ Add the plugin to your `opencode.json`:
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
-    "opencode-models-discovery@latest"
+    "@jc3212/opencode-models-discovery@latest"
   ],
   "provider": {
     "lmstudio": {
@@ -185,7 +185,7 @@ Caching is opt-in per provider. When enabled, the plugin stores the last success
 }
 ```
 
-The cache lives at `${XDG_DATA_HOME}/opencode-models-discovery/providers/provider-<encoded-provider-id>.json`, using `xdg-basedir`'s data-directory fallback when `XDG_DATA_HOME` is unset. It contains only models that passed discovery filters and enrichment eligibility checks, including their resulting OpenCode capability metadata. These files never contain credentials, auth headers, or OpenCode/Mimocode auth data. Saved per-model overrides are managed through `/models-discovery:config`; they are applied only to models present in the latest valid cached model set. Matching explicit `provider.<id>.models` configuration is recursively merged last, while explicit models not returned by discovery remain standalone. Explicit config is never written to the cache. See [model assembly and customization](docs/configuration.md#model-assembly-and-customization) and [persisted model discovery cache](docs/persisted-model-discovery.md) for details.
+The cache lives at `${XDG_DATA_HOME}/@jc3212/opencode-models-discovery/providers/provider-<encoded-provider-id>.json`, using `xdg-basedir`'s data-directory fallback when `XDG_DATA_HOME` is unset. It contains only models that passed discovery filters and enrichment eligibility checks, including their resulting OpenCode capability metadata. These files never contain credentials, auth headers, or OpenCode/Mimocode auth data. Saved per-model overrides are managed through `/models-discovery:config`; they are applied only to models present in the latest valid cached model set. Matching explicit `provider.<id>.models` configuration is recursively merged last, while explicit models not returned by discovery remain standalone. Explicit config is never written to the cache. See [model assembly and customization](docs/configuration.md#model-assembly-and-customization) and [persisted model discovery cache](docs/persisted-model-discovery.md) for details.
 
 ### `/models-discovery:migrate`
 
@@ -333,17 +333,17 @@ Provider users are welcome to contribute community-maintained configuration exam
 
 ## Logging
 
-When available, the plugin writes logs through OpenCode's structured server log API via `client.app.log(...)` using the service name `opencode-models-discovery`.
+When available, the plugin writes logs through OpenCode's structured server log API via `client.app.log(...)` using the service name `@jc3212/opencode-models-discovery`.
 
 If structured logging is unavailable in the runtime, the plugin falls back to prefixed `console.*` output. Key log categories are emitted through metadata such as `plugin`, `config`, `discovery`, `event`, and `filtering` to make local debugging easier with `opencode --print-logs`.
 
 ## Star History
 
-<a href="https://sh.yuhp.dev/star-history/opencode-models-discovery">
+<a href="https://star-history.com/#@jc3212/@jc3212/opencode-models-discovery&Date">
   <picture>
-    <source media="(prefers-color-scheme: dark)" srcset="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=dark" />
-    <source media="(prefers-color-scheme: light)" srcset="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=light" />
-    <img alt="Star History Chart" src="https://sh.yuhp.dev/star-history/opencode-models-discovery?theme=light" />
+    <source media="(prefers-color-scheme: dark)" srcset="https://api.star-history.com/svg?repos=@jc3212/@jc3212/opencode-models-discovery&type=Date&theme=dark" />
+    <source media="(prefers-color-scheme: light)" srcset="https://api.star-history.com/svg?repos=@jc3212/@jc3212/opencode-models-discovery&type=Date&theme=light" />
+    <img alt="Star History Chart" src="https://api.star-history.com/svg?repos=@jc3212/@jc3212/opencode-models-discovery&type=Date&theme=light" />
   </picture>
 </a>
 

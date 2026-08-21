@@ -52,7 +52,7 @@ It will:
 1. Run `npm run build`.
 2. Create and push the `vX.Y.Z` git tag if it does not already exist.
 3. Create a GitHub release with generated release notes.
-4. Publish `opencode-models-discovery@X.Y.Z` to npm if that version does not already exist.
+4. Publish `@jc3212/opencode-models-discovery@X.Y.Z` to npm if that version does not already exist.
 
 ## Prerequisites
 

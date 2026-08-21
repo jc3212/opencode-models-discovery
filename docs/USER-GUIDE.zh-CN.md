@@ -56,7 +56,7 @@ mkdir -p ~/.opencode-plugins
 # 2) 安装 tarball
 cd ~/.opencode-plugins
 npm init -y >/dev/null 2>&1
-npm install /path/to/opencode-models-discovery-1.5.0-rc.2.tgz
+npm install /path/to/@jc3212/opencode-models-discovery-1.5.0-rc.2.tgz
 
 # 3) 在 OpenCode 配置中注册插件（见下一节）
 ```
@@ -64,7 +64,7 @@ npm install /path/to/opencode-models-discovery-1.5.0-rc.2.tgz
 检查安装是否成功：
 
 ```bash
-node -e "console.log(require('$HOME/.opencode-plugins/node_modules/opencode-models-discovery/package.json').version)"
+node -e "console.log(require('$HOME/.opencode-plugins/node_modules/@jc3212/opencode-models-discovery/package.json').version)"
 ```
 
 应输出 `1.5.0-rc.2`。
@@ -76,7 +76,7 @@ node -e "console.log(require('$HOME/.opencode-plugins/node_modules/opencode-mode
 ```jsonc
 {
   "plugin": [
-    "/home/你的用户/.opencode-plugins/node_modules/opencode-models-discovery"
+    "/home/你的用户/.opencode-plugins/node_modules/@jc3212/opencode-models-discovery"
   ]
 }
 ```
@@ -247,7 +247,7 @@ npx opencode-models-discovery audit --verbose
 如果使用本机 tarball 安装：
 
 ```bash
-node ~/.opencode-plugins/node_modules/opencode-models-discovery/dist/cli.js audit --verbose
+node ~/.opencode-plugins/node_modules/@jc3212/opencode-models-discovery/dist/cli.js audit --verbose
 ```
 
 Audit 只读，不会发送付费推理请求。
@@ -327,7 +327,7 @@ transport known？
 
 ```bash
 cd ~/.opencode-plugins
-npm install /path/to/opencode-models-discovery-<新版本>.tgz
+npm install /path/to/@jc3212/opencode-models-discovery-<新版本>.tgz
 ```
 
 重启 OpenCode 即可。
@@ -355,7 +355,7 @@ opencode
 2. 如需保留模型发现配置，可以保留 `modelsDiscovery` 字段（OpenCode 会忽略未知插件配置）
 3. 删除插件安装目录：
    ```bash
-   rm -rf ~/.opencode-plugins/node_modules/opencode-models-discovery
+   rm -rf ~/.opencode-plugins/node_modules/@jc3212/opencode-models-discovery
    ```
 4. 如无需要，恢复配置备份
 

@@ -10,7 +10,7 @@ However, you do not have to hardcode `options.apiKey` when the provider credenti
 {
   "$schema": "https://opencode.ai/config.json",
   "plugin": [
-    "opencode-models-discovery@latest"
+    "@jc3212/opencode-models-discovery@latest"
   ],
   "provider": {
     "test_provider": {

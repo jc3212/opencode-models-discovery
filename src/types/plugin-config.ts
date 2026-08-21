@@ -125,7 +125,7 @@ export function getDefaultDiscoveryConfigFromEnv(logger?: PluginLogger): Discove
       fallback: DEFAULT_DISCOVERY_CONFIG.enabled,
     })
   } else {
-    console.warn(`[opencode-models-discovery] Ignoring invalid OPENCODE_MODELS_DISCOVERY_DEFAULT_ENABLED value: ${rawValue}`)
+    console.warn(`[@jc3212/opencode-models-discovery] Ignoring invalid OPENCODE_MODELS_DISCOVERY_DEFAULT_ENABLED value: ${rawValue}`)
   }
 
   return DEFAULT_DISCOVERY_CONFIG
@@ -162,7 +162,7 @@ function toRegExp(pattern: string, logger?: PluginLogger): RegExp | null {
     if (logger) {
       logger.warn('Ignoring invalid model regex', { category: 'filtering', pattern })
     } else {
-      console.warn(`[opencode-models-discovery] Ignoring invalid model regex: ${pattern}`)
+      console.warn(`[@jc3212/opencode-models-discovery] Ignoring invalid model regex: ${pattern}`)
     }
     return null
   }
@@ -186,7 +186,7 @@ function toModelFieldFilter(filter: ModelFieldFilter, logger?: PluginLogger): Co
       if (logger) {
         logger.warn('Ignoring invalid model field regex', { category: 'filtering', field: filter.field, pattern: filter.match })
       } else {
-        console.warn(`[opencode-models-discovery] Ignoring invalid model field regex for ${filter.field}: ${filter.match}`)
+        console.warn(`[@jc3212/opencode-models-discovery] Ignoring invalid model field regex for ${filter.field}: ${filter.match}`)
       }
       return null
     }

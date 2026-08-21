@@ -163,7 +163,7 @@ describe('ModelDiscovery Plugin', () => {
       expect(hooks.config).toBeTypeOf('function')
       expect(hooks.event).toBeTypeOf('function')
       expect(hooks['chat.params']).toBeUndefined()
-      expect(consoleSpy).toHaveBeenCalledWith('[opencode-models-discovery] Invalid client provided to plugin', { category: 'plugin' })
+      expect(consoleSpy).toHaveBeenCalledWith('[@jc3212/opencode-models-discovery] Invalid client provided to plugin', { category: 'plugin' })
 
       consoleSpy.mockRestore()
     })
@@ -174,7 +174,7 @@ describe('ModelDiscovery Plugin', () => {
       await pluginHooks.config(null)
       expect(mockClient.app.log).toHaveBeenLastCalledWith(expect.objectContaining({
         body: expect.objectContaining({
-          service: 'opencode-models-discovery',
+          service: '@jc3212/opencode-models-discovery',
           level: 'error',
           message: 'Invalid config provided',
           extra: expect.objectContaining({
@@ -229,7 +229,7 @@ describe('ModelDiscovery Plugin', () => {
           template: 'Keep me',
         })
         expect(config.command['models-discovery:migrate']).toEqual(expect.objectContaining({
-          description: 'Migrate opencode-models-discovery config',
+          description: 'Migrate @jc3212/opencode-models-discovery config',
           agent: 'build',
           template: expect.stringContaining('Use the customize-opencode skill.'),
         }))
@@ -249,9 +249,9 @@ describe('ModelDiscovery Plugin', () => {
         expect(config.command['models-discovery:migrate'].template).toContain('OPENCODE_MODELS_DISCOVERY_DEFAULT_ENABLED=false')
         expect(config.command['models-discovery:migrate'].template).toContain('restart opencode')
         expect(config.command['models-discovery:config']).toEqual(expect.objectContaining({
-          description: 'Configure opencode-models-discovery',
+          description: 'Configure @jc3212/opencode-models-discovery',
           agent: 'build',
-          template: expect.stringContaining('Help configure opencode-models-discovery using the recommended provider-level configuration style.'),
+          template: expect.stringContaining('Help configure @jc3212/opencode-models-discovery using the recommended provider-level configuration style.'),
         }))
         expect(config.command['models-discovery:config'].model).toBeUndefined()
         expect(config.command['models-discovery:config'].template).toContain('Use the customize-opencode skill.')
@@ -290,7 +290,7 @@ describe('ModelDiscovery Plugin', () => {
           body: expect.objectContaining({
             title: 'Discovery Config Migration',
             variant: 'warning',
-            message: expect.stringContaining('Global opencode-models-discovery config is no longer applied in v1.0.0')
+            message: expect.stringContaining('Global @jc3212/opencode-models-discovery config is no longer applied in v1.0.0')
           })
         })
 
@@ -311,7 +311,7 @@ describe('ModelDiscovery Plugin', () => {
         expect(mockClient.app.log).toHaveBeenCalledWith(expect.objectContaining({
           body: expect.objectContaining({
             level: 'warn',
-            message: 'Legacy global opencode-models-discovery config was detected but is ignored in v1.0.0. Use provider.<name>.options.modelsDiscovery instead.',
+            message: 'Legacy global @jc3212/opencode-models-discovery config was detected but is ignored in v1.0.0. Use provider.<name>.options.modelsDiscovery instead.',
             extra: expect.objectContaining({
               category: 'config',
               migrationCommand: '/models-discovery:migrate'
@@ -351,7 +351,7 @@ describe('ModelDiscovery Plugin', () => {
 
       expect(mockClient.tui.showToast).not.toHaveBeenCalled()
       expect(config.command['models-discovery:config']).toEqual(expect.objectContaining({
-        description: 'Configure opencode-models-discovery',
+        description: 'Configure @jc3212/opencode-models-discovery',
         agent: 'build',
         template: expect.stringContaining('Use the customize-opencode skill.'),
       }))
@@ -391,7 +391,7 @@ describe('ModelDiscovery Plugin', () => {
 
       expect(mockClient.app.log).toHaveBeenCalledWith(expect.objectContaining({
         body: expect.objectContaining({
-          service: 'opencode-models-discovery',
+          service: '@jc3212/opencode-models-discovery',
           level: 'warn',
           message: 'Config warnings',
           extra: expect.objectContaining({
@@ -2404,7 +2404,7 @@ describe('ModelDiscovery Plugin', () => {
 
       expect(mockClient.app.log).toHaveBeenLastCalledWith(expect.objectContaining({
         body: expect.objectContaining({
-          service: 'opencode-models-discovery',
+          service: '@jc3212/opencode-models-discovery',
           level: 'error',
           message: 'Invalid config provided',
           extra: expect.objectContaining({
@@ -2593,7 +2593,7 @@ describe('ModelDiscovery Plugin', () => {
 
       expect(mockClient.app.log).toHaveBeenLastCalledWith(expect.objectContaining({
         body: expect.objectContaining({
-          service: 'opencode-models-discovery',
+          service: '@jc3212/opencode-models-discovery',
           level: 'error',
           message: 'Invalid config provided',
           extra: expect.objectContaining({
@@ -2610,7 +2610,7 @@ describe('ModelDiscovery Plugin', () => {
       await pluginHooks.event({ event: null })
       expect(mockClient.app.log).toHaveBeenLastCalledWith(expect.objectContaining({
         body: expect.objectContaining({
-          service: 'opencode-models-discovery',
+          service: '@jc3212/opencode-models-discovery',
           level: 'error',
           message: 'Invalid event input',
           extra: expect.objectContaining({

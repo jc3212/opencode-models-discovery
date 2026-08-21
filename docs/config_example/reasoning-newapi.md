@@ -6,7 +6,7 @@ OpenAI-style `reasoning_effort` on the wire.
 ```json
 {
   "$schema": "https://opencode.ai/config.json",
-  "plugin": ["opencode-models-discovery"],
+  "plugin": ["@jc3212/opencode-models-discovery"],
   "provider": {
     "newapi": {
       "npm": "@ai-sdk/openai-compatible",

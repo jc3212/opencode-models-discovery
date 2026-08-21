@@ -57,7 +57,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/yuhp/opencode-models-discovery.git"
+    "url": "git+https://github.com/jc3212/opencode-models-discovery.git"
   },
   "dependencies": {
     "xdg-basedir": "^5.1.0"

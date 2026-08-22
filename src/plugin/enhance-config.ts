@@ -6,6 +6,7 @@ import { ToastNotifier } from '../ui/toast-notifier'
 import { categorizeModel, formatModelName, extractModelOwner } from '../utils'
 import { normalizeBaseURL, discoverModelsFromProvider, discoverModelInfoFromProvider, canDiscoverModels, isValidModel, DEFAULT_REQUEST_TIMEOUT_MS } from '../utils/openai-compatible-api'
 import { createModelInfoEnricher, isSupportedModelInfoFormat, type ModelInfoEnricher } from '../utils/model-info'
+import { classifyProviderPlan } from '../discovery/provider-plan'
 import { DEFAULT_CACHE_TTL_SECONDS, getDefaultDiscoveryConfigFromEnv, getProviderModelFieldFilters, getProviderModelRegexFilter, shouldDiscoverModel, shouldDiscoverModelByFields, shouldDiscoverProviderWithOverride, ModelInfoFormat } from '../types/plugin-config'
 import { fetchModelsDevData, type ModelsDevModel } from '../utils/models-dev-fetcher'
 import { applyReasoningEnrichment } from '../reasoning/enricher'
@@ -26,15 +27,6 @@ interface DiscoveredProvider {
   models: Record<string, any>
 }
 
-interface ResolvedProvider {
-  id?: string
-  key?: string
-}
-
-interface ResolvedProvidersLoader {
-  promise?: Promise<Map<string, ResolvedProvider>>
-}
-
 interface OpenCodeAuth {
   type?: string
   key?: string
@@ -42,7 +34,6 @@ interface OpenCodeAuth {
 
 type HostClient = 'opencode' | 'mimocode'
 
-const RESOLVED_PROVIDERS_TIMEOUT_MS = 250
 const DEFAULT_LITELLM_MODEL_INFO_ENDPOINT = '/v1/model/info'
 const DEFAULT_LMSTUDIO_MODELS_ENDPOINT = '/api/v1/models'
 const defaultProviderModelStore = new ProviderModelStore()
@@ -167,47 +158,6 @@ async function invalidateStaleReasoningVariants(
   return stripped
 }
 
-async function getResolvedProvidersByID(
-  client: PluginInput['client'],
-  logger: PluginLogger,
-  timeoutMs: number = RESOLVED_PROVIDERS_TIMEOUT_MS
-): Promise<Map<string, ResolvedProvider>> {
-  try {
-    const loadProviders = client.config?.providers
-    if (typeof loadProviders !== 'function') {
-      return new Map()
-    }
-
-    const result = await Promise.race([
-      loadProviders.call(client.config),
-      new Promise<undefined>((resolve) => {
-        setTimeout(() => resolve(undefined), timeoutMs)
-      })
-    ])
-
-    if (!result) {
-      logger.debug('Timed out loading resolved providers')
-      return new Map()
-    }
-
-    const providers = result?.data?.providers
-    if (!Array.isArray(providers)) {
-      return new Map()
-    }
-
-    return new Map(
-      providers
-        .filter((provider: ResolvedProvider) => typeof provider?.id === 'string')
-        .map((provider: ResolvedProvider) => [provider.id!, provider])
-    )
-  } catch (error) {
-    logger.debug('Could not load resolved providers', {
-      error: error instanceof Error ? error.message : String(error),
-    })
-    return new Map()
-  }
-}
-
 function detectHostClient(): HostClient {
   if (process.env.OPENCODE === '1') {
     return 'opencode'
@@ -272,20 +222,11 @@ function getConfiguredApiKey(providerConfig: any): string | undefined {
 async function getProviderApiKey(
   providerName: string,
   providerConfig: any,
-  client: PluginInput['client'],
-  loader: ResolvedProvidersLoader,
   logger: PluginLogger
 ): Promise<string | undefined> {
   const explicitApiKey = getConfiguredApiKey(providerConfig)
   if (explicitApiKey) {
     return explicitApiKey
-  }
-
-  loader.promise ??= getResolvedProvidersByID(client, logger)
-  const resolvedProvider = (await loader.promise).get(providerName)
-
-  if (typeof resolvedProvider?.key === 'string' && resolvedProvider.key.trim().length > 0) {
-    return resolvedProvider.key
   }
 
   const auth = await getOpenCodeAuth(providerName, logger)
@@ -296,22 +237,46 @@ async function getProviderApiKey(
   return undefined
 }
 
+export interface EnhanceConfigOptions {
+  /** Cooperative cancellation: checked before every network request and
+   *  before any config publication. Late results must never mutate config. */
+  signal?: AbortSignal
+}
+
 export async function enhanceConfig(
   config: any,
   client: PluginInput['client'],
   toastNotifier: ToastNotifier,
   pluginConfig: PluginConfig,
-  logger: PluginLogger
+  logger: PluginLogger,
+  options?: EnhanceConfigOptions
 ): Promise<void> {
   try {
     const providers = config.provider || {}
     const openAICompatibleProviders: DiscoveredProvider[] = []
     const discoveryConfig = getDefaultDiscoveryConfigFromEnv(logger.child({ category: 'config' }))
     const defaultDiscoveryEnabled = discoveryConfig.enabled
-    const resolvedProvidersLoader: ResolvedProvidersLoader = {}
 
     for (const [providerName, providerConfig] of Object.entries(providers)) {
       const p = providerConfig as any
+
+      // v3 §7.5: official OpenCode Zen/Go providers are fully delegated to
+      // the host. Zero key parsing, zero network, zero cache I/O, zero field
+      // mutation for this provider.
+      const providerPlan = classifyProviderPlan(p)
+      if (providerPlan.kind === 'no-contribution') {
+        logger.debug('Provider delegated to host catalog; plugin contributes nothing', {
+          provider: providerName,
+          reason: providerPlan.reason,
+        })
+        continue
+      }
+
+      // Deadline already fired: stop starting any new provider work.
+      if (options?.signal?.aborted) {
+        break
+      }
+
       const providerDiscoveryConfig = p.options?.modelsDiscovery ?? {}
       const modelsEndpoint = providerDiscoveryConfig.endpoint ?? '/v1/models'
       const timeoutMs = providerDiscoveryConfig.timeoutMs ?? DEFAULT_REQUEST_TIMEOUT_MS
@@ -363,9 +328,13 @@ export async function enhanceConfig(
             logger.child({ category: 'reasoning' }),
           )
         } else {
-          apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
-          const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs)
+          apiKey = await getProviderApiKey(providerName, p, logger)
+          const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs, options?.signal)
           if (!discovery.ok) {
+            if (options?.signal?.aborted) {
+              logger.warn('Discovery aborted before failure publication; config untouched', { provider: providerName })
+              break
+            }
             const existingModels = getExplicitModels(config, providerName, p.models || {})
             p.models = existingModels
             replaceInjectedModels(config, providerName, {})
@@ -380,8 +349,8 @@ export async function enhanceConfig(
           models = discovery.models.filter(isValidModel)
         }
       } else {
-        apiKey = await getProviderApiKey(providerName, p, client, resolvedProvidersLoader, logger)
-        const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs)
+        apiKey = await getProviderApiKey(providerName, p, logger)
+        const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs, options?.signal)
         if (!discovery.ok) {
           logger.warn('Provider model discovery failed', {
             provider: providerName,
@@ -411,7 +380,7 @@ export async function enhanceConfig(
         modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LMStudio) {
         const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
-        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs)
+        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs, options?.signal)
         if (modelInfoDiscovery.ok) {
           modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data)
         } else {
@@ -424,7 +393,7 @@ export async function enhanceConfig(
         }
       } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LiteLLM) {
         const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LITELLM_MODEL_INFO_ENDPOINT
-        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs)
+        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs, options?.signal)
         if (modelInfoDiscovery.ok) {
           modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data, { filterNonChat })
         } else {
@@ -526,6 +495,16 @@ export async function enhanceConfig(
         modelID,
         modelID in modelsWithOverrides ? mergeModelOverride(modelsWithOverrides[modelID], model) : model,
       ]))
+
+      if (options?.signal?.aborted) {
+        // v3 §3.1 blocking invariant: after the hook deadline the returned
+        // config is immutable for this pass. Cache writes above stay valid
+        // (same-identity warm), but no late config publication.
+        logger.warn('Discovery deadline exceeded before publication; config untouched', {
+          provider: providerName,
+        })
+        break
+      }
 
       p.models = {
         ...modelsWithOverrides,

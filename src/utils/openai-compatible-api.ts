@@ -42,18 +42,27 @@ export function buildAPIURL(baseURL: string, endpoint: string = OPENAI_COMPATIBL
   return `${normalized}${endpoint}`
 }
 
-function requestJson<T>(urlStr: string, headers: Record<string, string>, timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS): Promise<T | undefined> {
+function requestJson<T>(urlStr: string, headers: Record<string, string>, timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS, signal?: AbortSignal): Promise<T | undefined> {
   return new Promise((resolve) => {
     let settled = false
     const finish = (data: T | undefined) => {
       if (!settled) {
         settled = true
+        cleanup()
         resolve(data)
       }
     }
 
-    const urlObj = new URL(urlStr)
+    let urlObj: URL
+    try {
+      urlObj = new URL(urlStr)
+    } catch {
+      finish(undefined)
+      return
+    }
     const mod = urlObj.protocol === 'https:' ? https : http
+
+    const onAbort = () => finish(undefined)
 
     const req = mod.get(urlObj, {
       headers: { 'User-Agent': REQUEST_USER_AGENT, ...headers },
@@ -77,11 +86,26 @@ function requestJson<T>(urlStr: string, headers: Record<string, string>, timeout
       res.on('error', () => finish(undefined))
     })
 
+    function cleanup(): void {
+      signal?.removeEventListener('abort', onAbort)
+    }
+
     req.on('error', () => finish(undefined))
     req.on('timeout', () => {
       req.destroy()
       finish(undefined)
     })
+
+    // Caller-initiated cancellation: destroy the socket immediately and settle
+    // as a failure. A result that arrives after abort is never published.
+    if (signal) {
+      if (signal.aborted) {
+        req.destroy()
+        finish(undefined)
+        return
+      }
+      signal.addEventListener('abort', onAbort, { once: true })
+    }
   })
 }
 
@@ -89,7 +113,8 @@ export async function discoverModelsFromProvider(
   baseURL: string,
   apiKey?: string,
   endpoint: string = OPENAI_COMPATIBLE_MODELS_ENDPOINT,
-  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
+  signal?: AbortSignal
 ): Promise<ModelsDiscoveryResult> {
   const url = buildAPIURL(baseURL, endpoint)
   const headers: Record<string, string> = {
@@ -99,7 +124,7 @@ export async function discoverModelsFromProvider(
     headers["Authorization"] = `Bearer ${apiKey}`
   }
 
-  const data = await requestJson<OpenAIModelsResponse>(url, headers, timeoutMs)
+  const data = await requestJson<OpenAIModelsResponse>(url, headers, timeoutMs, signal)
   if (!data) return { ok: false, models: [] }
   return { ok: true, models: sanitizeDiscoveredModels(data.data) }
 }
@@ -141,7 +166,8 @@ export async function discoverModelInfoFromProvider(
   baseURL: string,
   apiKey?: string,
   endpoint: string = "/v1/model/info",
-  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
+  signal?: AbortSignal
 ): Promise<ModelInfoDiscoveryResult> {
   const url = buildAPIURL(baseURL, endpoint)
   const headers: Record<string, string> = {
@@ -151,7 +177,7 @@ export async function discoverModelInfoFromProvider(
     headers["Authorization"] = `Bearer ${apiKey}`
   }
 
-  const data = await requestJson<unknown>(url, headers, timeoutMs)
+  const data = await requestJson<unknown>(url, headers, timeoutMs, signal)
   return data !== undefined ? { ok: true, data } : { ok: false, data: undefined }
 }
 

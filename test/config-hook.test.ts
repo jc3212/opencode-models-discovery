@@ -1,7 +1,6 @@
 import { describe, expect, it, vi } from 'vitest'
 import { DEFAULT_CONFIG_HOOK_TIMEOUT_MS, getConfigHookTimeoutMs } from '../src/plugin/config-hook'
 import type { PluginLogger } from '../src/plugin/logger'
-import { DEFAULT_REQUEST_TIMEOUT_MS } from '../src/utils/openai-compatible-api'
 
 const logger: PluginLogger = {
   debug: vi.fn(),
@@ -16,12 +15,11 @@ describe('config hook timeout', () => {
     expect(getConfigHookTimeoutMs({}, logger)).toBe(DEFAULT_CONFIG_HOOK_TIMEOUT_MS)
     expect(logger.debug).toHaveBeenCalledWith('Using config hook timeout', {
       timeoutMs: DEFAULT_CONFIG_HOOK_TIMEOUT_MS,
-      providerTimeoutBudgetMs: 0,
       providerCount: 0,
     })
   })
 
-  it('covers the sum of sequential provider request timeouts', () => {
+  it('does not scale with the number of providers (v3 §3.1: no per-provider accumulation)', () => {
     const config = {
       provider: {
         fast: { options: { baseURL: 'https://fast.example.com/v1', modelsDiscovery: { timeoutMs: 3000 } } },
@@ -29,25 +27,14 @@ describe('config hook timeout', () => {
       },
     }
 
-    expect(getConfigHookTimeoutMs(config, logger)).toBe(10500)
+    expect(getConfigHookTimeoutMs(config, logger)).toBe(DEFAULT_CONFIG_HOOK_TIMEOUT_MS)
     expect(logger.debug).toHaveBeenCalledWith('Using config hook timeout', {
-      timeoutMs: 10500,
-      providerTimeoutBudgetMs: 10500,
+      timeoutMs: DEFAULT_CONFIG_HOOK_TIMEOUT_MS,
       providerCount: 2,
     })
   })
 
-  it('does not reduce the default startup wait budget', () => {
-    const config = {
-      provider: {
-        fast: { options: { baseURL: 'https://fast.example.com/v1', modelsDiscovery: { timeoutMs: 1000 } } },
-      },
-    }
-
-    expect(getConfigHookTimeoutMs(config, logger)).toBe(DEFAULT_CONFIG_HOOK_TIMEOUT_MS)
-  })
-
-  it('uses defaults, skips disabled providers, and budgets metadata requests', () => {
+  it('ignores large single-provider request caps in the hook budget', () => {
     const config = {
       provider: {
         defaulted: { options: { baseURL: 'https://default.example.com/v1', modelsDiscovery: {} } },
@@ -57,6 +44,12 @@ describe('config hook timeout', () => {
       },
     }
 
-    expect(getConfigHookTimeoutMs(config, logger)).toBe(DEFAULT_REQUEST_TIMEOUT_MS * 3)
+    // timeoutMs is a per-request cap only; the hook budget stays fixed and
+    // disabled/URL-less providers are not counted.
+    expect(getConfigHookTimeoutMs(config, logger)).toBe(DEFAULT_CONFIG_HOOK_TIMEOUT_MS)
+    expect(logger.debug).toHaveBeenLastCalledWith('Using config hook timeout', {
+      timeoutMs: DEFAULT_CONFIG_HOOK_TIMEOUT_MS,
+      providerCount: 2,
+    })
   })
 })

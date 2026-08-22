@@ -29,15 +29,51 @@ function stripTag(modelId: string): string {
   return modelId.replace(/:[a-zA-Z0-9_-]+$/g, '')
 }
 
-/** Lower-case keys for case-insensitive exact lookup. */
-function buildLowerIndex(index: Map<string, ModelsDevModel>): Map<string, ModelsDevModel> {
-  const lower = new Map<string, ModelsDevModel>()
+/**
+ * Pre-built lookup structures for one models.dev index (v3 plan Gate 1
+ * "pre-built indexes"): building them per model lookup made canonical
+ * resolution O(catalog x models) per provider. The bundle is memoized per
+ * index instance via WeakMap, so repeated `resolveCanonicalModel` calls on
+ * the same index are O(1) after the first build. Matching semantics are
+ * unchanged: first occurrence wins on case-insensitive key collisions, and
+ * match ordering follows original index insertion order.
+ */
+interface CanonicalIndexBundle {
+  lowerIndex: Map<string, ModelsDevModel>
+  byModelPart: Map<string, ModelsDevModel[]>
+  providers: Set<string>
+}
+
+const canonicalIndexCache = new WeakMap<Map<string, ModelsDevModel>, CanonicalIndexBundle>()
+
+function getIndexBundle(index: Map<string, ModelsDevModel>): CanonicalIndexBundle {
+  const cached = canonicalIndexCache.get(index)
+  if (cached) return cached
+
+  const lowerIndex = new Map<string, ModelsDevModel>()
   for (const [key, value] of index.entries()) {
-    if (!lower.has(key.toLowerCase())) {
-      lower.set(key.toLowerCase(), value)
+    if (!lowerIndex.has(key.toLowerCase())) {
+      lowerIndex.set(key.toLowerCase(), value)
     }
   }
-  return lower
+
+  const byModelPart = new Map<string, ModelsDevModel[]>()
+  const providers = new Set<string>()
+  for (const [key, value] of lowerIndex.entries()) {
+    const modelPart = splitModelId(key).model.toLowerCase()
+    const matches = byModelPart.get(modelPart)
+    if (matches) {
+      matches.push(value)
+    } else {
+      byModelPart.set(modelPart, [value])
+    }
+    const provider = splitModelId(key).provider
+    if (provider) providers.add(provider)
+  }
+
+  const bundle: CanonicalIndexBundle = { lowerIndex, byModelPart, providers }
+  canonicalIndexCache.set(index, bundle)
+  return bundle
 }
 
 function splitModelId(modelId: string): { provider?: string; model: string } {
@@ -52,12 +88,8 @@ function splitModelId(modelId: string): { provider?: string; model: string } {
  * Collect provider slugs present in the index, plus the vendor segment of
  * the requested id, so namespace-stripped matching is evidence-based.
  */
-function collectProviders(index: Map<string, ModelsDevModel>, requested: string): Set<string> {
-  const providers = new Set<string>()
-  for (const key of index.keys()) {
-    const provider = splitModelId(key).provider
-    if (provider) providers.add(provider)
-  }
+function collectProviders(bundle: CanonicalIndexBundle, requested: string): Set<string> {
+  const providers = new Set(bundle.providers)
   const requestedProvider = splitModelId(requested).provider
   if (requestedProvider) providers.add(requestedProvider)
   return providers
@@ -72,15 +104,8 @@ function lookupExact(lowerIndex: Map<string, ModelsDevModel>, id: string): Model
  * Find canonical entries whose final model segment matches `modelPart`
  * exactly (case-insensitive). Returns all matches so ambiguity can be judged.
  */
-function findUniqueModelPart(lowerIndex: Map<string, ModelsDevModel>, modelPart: string): ModelsDevModel[] {
-  const wanted = modelPart.toLowerCase()
-  const matches: ModelsDevModel[] = []
-  for (const [key, value] of lowerIndex.entries()) {
-    if (splitModelId(key).model.toLowerCase() === wanted) {
-      matches.push(value)
-    }
-  }
-  return matches
+function findUniqueModelPart(bundle: CanonicalIndexBundle, modelPart: string): ModelsDevModel[] {
+  return bundle.byModelPart.get(modelPart.toLowerCase()) ?? []
 }
 
 /**
@@ -90,10 +115,16 @@ function findUniqueModelPart(lowerIndex: Map<string, ModelsDevModel>, modelPart:
  */
 const REVISION_SUFFIX = /-(?:\d{4}-\d{2}-\d{2}|v\d+)$/
 
+/** Test-only access to the memoized per-index bundle (Gate 1). */
+export function getCanonicalIndexBundleForTest(index: Map<string, ModelsDevModel>): CanonicalIndexBundle {
+  return getIndexBundle(index)
+}
+
 export function resolveCanonicalModel(input: ResolveCanonicalInput): CanonicalModelResolution {
   const { modelId, aliases } = input
   const index = input.modelsDevIndex
-  const lowerIndex = buildLowerIndex(index)
+  const bundle = getIndexBundle(index)
+  const lowerIndex = bundle.lowerIndex
   const cleanId = stripTag(modelId).trim()
 
   if (!cleanId) {
@@ -147,7 +178,7 @@ export function resolveCanonicalModel(input: ResolveCanonicalInput): CanonicalMo
 
     // Try `<known-provider>/<stripped-model>` combos; require a unique hit.
     const candidates: ModelsDevModel[] = []
-    for (const provider of collectProviders(index, cleanId)) {
+    for (const provider of collectProviders(bundle, cleanId)) {
       const hit = lookupExact(lowerIndex, provider + '/' + stripped)
       if (hit) candidates.push(hit)
     }
@@ -173,7 +204,7 @@ export function resolveCanonicalModel(input: ResolveCanonicalInput): CanonicalMo
   }
 
   // 4. Unique model-id exact across all providers.
-  const uniqueMatches = findUniqueModelPart(lowerIndex, requested.model)
+  const uniqueMatches = findUniqueModelPart(bundle, requested.model)
   if (uniqueMatches.length === 1) {
     const hit = uniqueMatches[0]!
     return {
@@ -221,7 +252,7 @@ export function resolveCanonicalModel(input: ResolveCanonicalInput): CanonicalMo
   if (revisionMatch) {
     const baseId = cleanId.slice(0, -revisionMatch[0].length)
     const baseExact = lookupExact(lowerIndex, baseId)
-    const baseUnique = baseExact ? [baseExact] : findUniqueModelPart(lowerIndex, baseId)
+    const baseUnique = baseExact ? [baseExact] : findUniqueModelPart(bundle, baseId)
     if (baseUnique.length === 1) {
       const base = baseUnique[0]!
       return {

@@ -795,12 +795,13 @@ describe('ModelDiscovery Plugin', () => {
       expect(mockFetch).toHaveBeenCalledTimes(1)
     })
 
-    it('should use resolved provider key from OpenCode auth when options.apiKey is absent', async () => {
-      mockClient.config.providers.mockResolvedValueOnce({
-        data: {
-          providers: [
-            { id: 'test_provider', key: 'connected-key' }
-          ]
+    it('should use OPENCODE_AUTH_CONTENT when options.apiKey is absent, without host SDK re-entry', async () => {
+      // v3 Gate 1: client.config.providers() re-entry removed; the local
+      // auth-content store is the credential source now.
+      process.env.OPENCODE_AUTH_CONTENT = JSON.stringify({
+        test_provider: {
+          type: 'api',
+          key: 'connected-key'
         }
       })
       mockFetch.mockResolvedValueOnce({
@@ -832,14 +833,14 @@ describe('ModelDiscovery Plugin', () => {
           Authorization: 'Bearer connected-key'
         })
       }))
+      expect(mockClient.config.providers).not.toHaveBeenCalled()
     })
 
-    it('should prefer explicit options.apiKey over resolved provider key', async () => {
-      mockClient.config.providers.mockResolvedValueOnce({
-        data: {
-          providers: [
-            { id: 'test_provider', key: 'connected-key' }
-          ]
+    it('should prefer explicit options.apiKey over OPENCODE_AUTH_CONTENT', async () => {
+      process.env.OPENCODE_AUTH_CONTENT = JSON.stringify({
+        test_provider: {
+          type: 'api',
+          key: 'auth-store-key'
         }
       })
       mockFetch.mockResolvedValueOnce({

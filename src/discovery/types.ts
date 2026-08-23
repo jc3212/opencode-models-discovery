@@ -169,3 +169,65 @@ export interface DiscoveryMachineState {
   projection: ProjectionState
   refresh: RefreshState
 }
+
+// ---------------------------------------------------------------------------
+// Semantic inventory identity and credential generations (plan §3.3, §9.2)
+// ---------------------------------------------------------------------------
+
+/**
+ * The exact scope an inventory belongs to. Two consumers share a cache entry
+ * ONLY when every field here is identical after normalization. Credential
+ * material itself NEVER appears: it enters only as an HMAC fingerprint.
+ */
+export interface SemanticInventoryIdentityV3 {
+  providerId: string
+  adapterId: string
+  adapterVersion: number
+  /**
+   * origin + path only. Query strings, fragments and userinfo are dropped
+   * before hashing; sensitive request vary enters via requestVaryFingerprint.
+   */
+  canonicalRequestUrlRedacted: string
+  visibilitySemantics: VisibilitySemantics
+  visibilityScope: VisibilityScope
+  runtimeAuth: {
+    kind: 'public' | 'credential'
+    credentialType?: string
+    identityKind: 'public' | 'material' | 'stable-principal'
+    identityFingerprint?: string
+  }
+  /**
+   * Optional management-plane query identity. It describes candidates inside
+   * the SAME semantic identity; it can never substitute the runtime auth.
+   */
+  controlPlaneAuth?: {
+    credentialType: string
+    identityKind: 'material' | 'stable-principal'
+    identityFingerprint: string
+    accountFingerprint?: string
+    projectFingerprint?: string
+  }
+  region?: string
+  partition?: string
+  organizationFingerprint?: string
+  workspaceFingerprint?: string
+  projectFingerprint?: string
+  subscriptionResourceFingerprint?: string
+  /** Local HMAC over sorted sensitive headers/query values that vary results. */
+  requestVaryFingerprint: string
+  /** e.g. `chat-completions`, `responses`, `anthropic-messages`. */
+  apiSurface: string
+}
+
+/**
+ * Fingerprint of the current credential material actually resolved at
+ * runtime. Not a principal, not plaintext; changes on every rotation even
+ * when the stable principal does not. Old generations must never publish,
+ * activate caches, or write tombstones for newer generations (§3.3).
+ */
+export interface CredentialGenerationV1 {
+  runtimeMaterialFingerprint?: string
+  runtimeMaterialVersion?: string
+  controlPlaneMaterialFingerprint?: string
+  controlPlaneMaterialVersion?: string
+}

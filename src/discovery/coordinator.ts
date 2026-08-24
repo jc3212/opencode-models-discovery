@@ -67,6 +67,13 @@ export interface CompleteRefreshInput {
   routes?: readonly DiscoveredRoute[]
   /** Whether an exact complete LKG exists and remains within hard TTL. */
   hasValidLkg?: boolean
+  /**
+   * For `kind='auth-failure'`: whether the adapter contract PROVES the
+   * current inference credential itself was rejected (§8.4). Defaults to
+   * true; enumeration-only or permission denials must pass false so the
+   * machine degrades to explicit-only without a tombstone.
+   */
+  confirmedIdentityAuthFailure?: boolean
 }
 
 export interface CompletionResult {
@@ -224,7 +231,10 @@ export class DiscoveryCoordinator {
 
     const hasValidLkg = input.hasValidLkg ?? (this.projectionValue.state === 'fresh' || this.projectionValue.state === 'stale-allowed')
     if (input.kind === 'auth-failure') {
-      this.stateValue = reduceDiscovery(this.stateValue, { type: 'AUTH_ERROR', confirmedIdentityAuthFailure: true })
+      this.stateValue = reduceDiscovery(this.stateValue, {
+        type: 'AUTH_ERROR',
+        confirmedIdentityAuthFailure: input.confirmedIdentityAuthFailure ?? true,
+      })
     } else if (input.kind === 'transient-failure') {
       this.stateValue = reduceDiscovery(this.stateValue, { type: 'TRANSIENT_FAILURE', semantics: this.options.semantics, hasValidLkg })
     } else {

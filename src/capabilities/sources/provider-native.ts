@@ -7,12 +7,17 @@
  */
 
 import type { ReasoningCapabilityEvidence } from '../types'
-import { finishEvidence, type BuildEvidenceInput } from './common'
+import {
+  finishEvidence,
+  type BuildEvidenceInput,
+  type CuratedProvenance,
+} from './common'
 
 export function providerNativeEvidence(
   draft: Omit<ReasoningCapabilityEvidence, 'source' | 'authority'> & {
     authority?: ReasoningCapabilityEvidence['authority']
-  } & BuildEvidenceInput,
+  } & BuildEvidenceInput &
+    Partial<CuratedProvenance>,
 ): ReasoningCapabilityEvidence {
   return finishEvidence('provider-native', {
     ...draft,

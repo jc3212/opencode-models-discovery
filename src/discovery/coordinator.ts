@@ -18,7 +18,7 @@
  */
 
 import type { ConsumerKey } from './identity'
-import type { DiscoveredRoute, DiscoveryMachineState } from './types'
+import type { DiscoveredRoute, DiscoveryEvent, DiscoveryMachineState } from './types'
 import {
   initialDiscoveryState,
   reduceDiscovery,
@@ -26,7 +26,7 @@ import {
 } from './state-machine'
 import { projectRoutes, type ProjectionDraft, type ProjectionSemantics } from './projector'
 
-export type RefreshTrigger = 'post-setup' | 'soft-ttl' | 'cache-revision' | 'manual'
+export type RefreshTrigger = 'post-setup' | 'soft-ttl' | 'hard-ttl' | 'cache-revision' | 'manual'
 export type CompletionKind = 'complete' | 'not-modified' | 'partial' | 'invalid' | 'transient-failure' | 'auth-failure'
 
 export interface CoordinatorIdentity {
@@ -86,13 +86,18 @@ function identityValid(value: string, field: string): void {
   if (!/^[0-9a-f]{64}$/.test(value)) throw new TypeError(`${field} must be a 64-char lowercase hex hash`)
 }
 
-function mapTrigger(trigger: RefreshTrigger): 'POST_SETUP_DEFERRED' | 'SOFT_TTL_DUE' | 'CACHE_REVISION_CHANGED' | 'MANUAL_REFRESH' {
+function mapTrigger(trigger: Exclude<RefreshTrigger, 'hard-ttl'>): 'POST_SETUP_DEFERRED' | 'SOFT_TTL_DUE' | 'CACHE_REVISION_CHANGED' | 'MANUAL_REFRESH' {
   switch (trigger) {
     case 'post-setup': return 'POST_SETUP_DEFERRED'
     case 'soft-ttl': return 'SOFT_TTL_DUE'
     case 'cache-revision': return 'CACHE_REVISION_CHANGED'
     case 'manual': return 'MANUAL_REFRESH'
   }
+}
+
+function triggerEvent(trigger: RefreshTrigger, semantics: ProjectionSemantics): DiscoveryEvent {
+  if (trigger === 'hard-ttl') return { type: 'HARD_TTL_DUE', semantics }
+  return { type: mapTrigger(trigger) }
 }
 
 function emptyProjection(options: CoordinatorOptions): ProjectionDraft {
@@ -198,7 +203,7 @@ export class DiscoveryCoordinator {
   /** Dispatches a trigger and returns an exact singleflight job token. */
   beginRefresh(trigger: RefreshTrigger): RefreshJobToken | undefined {
     if (this.disposedValue || !this.identityValue || this.activeJob) return undefined
-    this.stateValue = reduceDiscovery(this.stateValue, { type: mapTrigger(trigger) })
+    this.stateValue = reduceDiscovery(this.stateValue, triggerEvent(trigger, this.options.semantics))
     if (this.stateValue.refresh !== 'scheduled') return undefined
     this.stateValue = reduceDiscovery(this.stateValue, { type: 'REFRESH_STARTED' })
     if (this.stateValue.refresh !== 'refreshing') return undefined

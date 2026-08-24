@@ -60,6 +60,7 @@
     "url": "git+https://github.com/jc3212/opencode-models-discovery.git"
   },
   "dependencies": {
+    "effect": "^4.0.0-beta.83",
     "xdg-basedir": "^5.1.0"
   },
   "peerDependencies": {

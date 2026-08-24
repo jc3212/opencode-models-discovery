@@ -60,7 +60,10 @@ export interface PromiseDiscoveryRuntimeOptions extends Omit<
     | undefined
     | Promise<ResolvedIdentityContext | undefined>
   /** Executes one provider inventory fetch for the exact context. */
-  fetchInventory: (context: ResolvedIdentityContext) => Promise<InventoryFetchResult>
+  fetchInventory: (
+    context: ResolvedIdentityContext,
+    signal?: AbortSignal,
+  ) => Promise<InventoryFetchResult>
   freshSeconds: number
   hardStaleSeconds: number
   /** Non-negative grace period after setup return, in milliseconds. */
@@ -123,6 +126,7 @@ export class PromiseDiscoveryRuntime {
   private activeToken?: RefreshJobToken
   private lastCompleteAtMs = 0
   private disposed = false
+  private readonly activeControllers = new Set<AbortController>()
 
   constructor(options: PromiseDiscoveryRuntimeOptions) {
     this.options = options
@@ -250,10 +254,14 @@ export class PromiseDiscoveryRuntime {
     }
 
     let result: InventoryFetchResult
+    const controller = new AbortController()
+    this.activeControllers.add(controller)
     try {
-      result = await this.options.fetchInventory(context)
+      result = await this.options.fetchInventory(context, controller.signal)
     } catch (error) {
       result = transientFromError(error)
+    } finally {
+      this.activeControllers.delete(controller)
     }
 
     const completion = this.coordinator.completeRefresh({
@@ -333,6 +341,8 @@ export class PromiseDiscoveryRuntime {
     if (this.disposed) return
     this.disposed = true
     this.activeToken = undefined
+    for (const controller of this.activeControllers) controller.abort()
+    this.activeControllers.clear()
     this.coordinator.dispose()
   }
 }

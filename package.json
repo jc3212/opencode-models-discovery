@@ -37,7 +37,8 @@
     "test:clean-install": "bun scripts/test-clean-install.ts",
     "test:cli-bunless": "bash scripts/test-cli-bunless.sh",
     "registry:sync-models-dev": "bun scripts/registry-tools/sync-models-dev.ts",
-    "registry:audit": "bun scripts/registry-tools/audit-merge.ts"
+    "registry:audit": "bun scripts/registry-tools/audit-merge.ts",
+    "metadata:sync": "bun scripts/sync-metadata.ts"
   },
   "keywords": [
     "opencode",

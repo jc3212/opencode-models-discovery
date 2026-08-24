@@ -1,0 +1,60 @@
+name: metadata-sync
+
+# Curated registry sync (v3 plan §12.2): scheduled pull → schema/collision/
+# diff audit → REVIEWABLE PR. Never auto-merges; runtime only reads bundled
+# curated files, so a landed PR is the sole promotion path.
+
+on:
+  schedule:
+    # Daily 03:17 UTC (off-peak, non-round minute).
+    - cron: '17 3 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout@v4.1.7 — full-commit-SHA pin per plan §12.2.
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
+        with:
+          persist-credentials: false
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Run metadata sync audit
+        id: sync
+        run: |
+          set -euo pipefail
+          bun scripts/sync-metadata.ts || code=$?
+          echo "exit=$code" >> "$GITHUB_OUTPUT"
+          exit 0
+
+      - name: Open or update review PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          SYNC_EXIT: ${{ steps.sync.outputs.exit }}
+        run: |
+          set -euo pipefail
+          BRANCH="metadata-sync/candidate"
+          git config user.name "metadata-sync-bot"
+          git config user.email "bot@users.noreply.github.com"
+          git checkout -B "$BRANCH"
+          git add metadata/candidate-snapshot.json metadata/sync-report.md || true
+          if git diff --cached --quiet; then
+            echo "No candidate changes."
+            exit 0
+          fi
+          git commit -m "chore(metadata): candidate snapshot update (exit=$SYNC_EXIT)"
+          git push -f origin "$BRANCH"
+          BODY=$(cat metadata/sync-report.md)
+          gh pr create \
+            --title "chore(metadata): curated snapshot candidate" \
+            --body "$BODY" \
+            --base main --head "$BRANCH" \
+            || gh pr edit "$BRANCH" --body "$BODY"

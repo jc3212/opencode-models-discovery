@@ -306,6 +306,25 @@ export class PromiseDiscoveryRuntime {
     return summary
   }
 
+  /** Current TTL phase for diagnostics; never self-schedules from it. */
+  schedulePhase():
+    | 'never-completed'
+    | 'fresh'
+    | 'soft-due'
+    | 'hard-stale'
+    | 'invalid-config' {
+    try {
+      return classifySchedulePhase({
+        nowMs: this.now(),
+        lastCompleteAtMs: this.lastCompleteAtMs,
+        freshSeconds: this.options.freshSeconds,
+        hardStaleSeconds: this.options.hardStaleSeconds,
+      })
+    } catch {
+      return 'invalid-config'
+    }
+  }
+
   snapshot() {
     return this.coordinator.snapshot()
   }

@@ -180,8 +180,12 @@ export function buildVariantPlan(input: VariantPlanInput): VariantPlan {
       ? accepted.values
       : []
     effectiveValues = positives.map((value) => {
-      if ((EFFECTIVE_VALUES as Set<string>).has(value)) return value
-      return normMap?.[value]
+      // A normalization record is the AUTHORITATIVE accepted→effective
+      // mapping; unlisted inputs fall back to identity only when already
+      // valid effective tiers, and are otherwise dropped, never guessed.
+      const mapped = normMap?.[value]
+      if (mapped !== undefined) return mapped
+      return (EFFECTIVE_VALUES as Set<string>).has(value) ? value : undefined
     }).filter((value): value is string => value !== undefined)
   } else {
     effectiveValues = []

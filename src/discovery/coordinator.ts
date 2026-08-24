@@ -57,6 +57,8 @@ export interface CoordinatorOptions {
   contribution: ContributionKind
   explicitSelectionKeys?: readonly string[]
   previousPluginSelectionKeys?: readonly string[]
+  /** Raw user-facing allowlist entries; resolved upstream, intersected in the projector (§8.3). */
+  userWhitelist?: readonly string[]
   manualModels?: 'intersect' | 'preserve'
   planGeneration?: number
 }
@@ -107,6 +109,7 @@ function emptyProjection(options: CoordinatorOptions): ProjectionDraft {
     routes: [],
     explicitSelectionKeys: options.explicitSelectionKeys,
     previousPluginSelectionKeys: options.previousPluginSelectionKeys,
+    userWhitelist: options.userWhitelist,
     manualModels: options.manualModels,
     noContribution: options.contribution === 'none',
   })
@@ -129,6 +132,7 @@ export class DiscoveryCoordinator {
       ...options,
       explicitSelectionKeys: [...(options.explicitSelectionKeys ?? [])],
       previousPluginSelectionKeys: [...(options.previousPluginSelectionKeys ?? [])],
+      userWhitelist: options.userWhitelist === undefined ? undefined : [...options.userWhitelist],
     }
     this.planGenerationValue = options.planGeneration ?? 0
     if (!Number.isSafeInteger(this.planGenerationValue) || this.planGenerationValue < 0) {
@@ -193,6 +197,7 @@ export class DiscoveryCoordinator {
       routes,
       explicitSelectionKeys: this.options.explicitSelectionKeys,
       previousPluginSelectionKeys: this.options.previousPluginSelectionKeys,
+      userWhitelist: this.options.userWhitelist,
       manualModels: this.options.manualModels,
       noContribution: this.options.contribution === 'none',
     })
@@ -252,6 +257,7 @@ export class DiscoveryCoordinator {
           routes: input.routes ?? [],
           explicitSelectionKeys: this.options.explicitSelectionKeys,
           previousPluginSelectionKeys: this.options.previousPluginSelectionKeys,
+          userWhitelist: this.options.userWhitelist,
           manualModels: this.options.manualModels,
           noContribution: this.options.contribution === 'none',
         })

@@ -136,6 +136,7 @@ export class PromiseDiscoveryRuntime {
       ...(options.previousPluginSelectionKeys !== undefined
         ? { previousPluginSelectionKeys: options.previousPluginSelectionKeys }
         : {}),
+      ...(options.userWhitelist !== undefined ? { userWhitelist: options.userWhitelist } : {}),
       ...(options.manualModels !== undefined ? { manualModels: options.manualModels } : {}),
       ...(options.planGeneration !== undefined
         ? { planGeneration: options.planGeneration }

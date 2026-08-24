@@ -12,3 +12,6 @@ docs/articles/
 
 npm-cache/
 packout/
+
+# Local-only planning documents (never pushed)
+docs/plans/

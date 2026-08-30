@@ -243,6 +243,361 @@ export interface EnhanceConfigOptions {
   signal?: AbortSignal
 }
 
+interface ProviderDiscoveryTask {
+  providerName: string
+  provider: any
+  baseURL: string
+  modelsEndpoint: string
+  timeoutMs: number
+  modelInfoFormat: ProviderDiscoveryConfig['modelInfoFormat']
+  filterNonChat: boolean
+  providerDiscoveryConfig: ProviderDiscoveryConfig
+  cacheEnabled: boolean
+  ttlSeconds: number
+  cacheIdentity: {
+    id: string
+    baseURL: string
+    endpoint: string
+  }
+}
+
+type ProviderDiscoveryResult =
+  | {
+      kind: 'publish'
+      providerName: string
+      provider: any
+      baseURL: string
+      models: Record<string, any>
+      injectedModels: Record<string, any>
+    }
+  | {
+      kind: 'clear-explicit'
+      providerName: string
+      provider: any
+      models: Record<string, any>
+    }
+  | {
+      kind: 'skip'
+      providerName: string
+    }
+  | {
+      kind: 'aborted'
+      providerName: string
+    }
+
+function selectedProviderName(config: any, providers: Record<string, any>): string | undefined {
+  const model = config?.model
+  if (typeof model !== 'string' || model.length === 0) {
+    return undefined
+  }
+
+  // Provider ids are normally the first segment of provider/model. Matching
+  // the longest configured prefix also handles ids that themselves contain a
+  // slash without guessing from an arbitrary model id.
+  return Object.keys(providers)
+    .filter((providerName) => model === providerName || model.startsWith(`${providerName}/`))
+    .sort((left, right) => right.length - left.length)[0]
+}
+
+function prioritizeSelectedProvider(
+  tasks: ProviderDiscoveryTask[],
+  selectedProvider: string | undefined,
+): ProviderDiscoveryTask[] {
+  if (!selectedProvider) return tasks
+  const selected = tasks.find((task) => task.providerName === selectedProvider)
+  if (!selected) return tasks
+  return [selected, ...tasks.filter((task) => task !== selected)]
+}
+
+function logProviderDiscoveryFailure(
+  logger: PluginLogger,
+  task: ProviderDiscoveryTask,
+  error: { code?: string; message?: string; status?: number } | undefined,
+  extra: Record<string, unknown> = {},
+): void {
+  logger.warn('Provider model discovery failed', {
+    provider: task.providerName,
+    baseURL: task.baseURL,
+    endpoint: task.modelsEndpoint,
+    transport: 'direct',
+    proxyEnvironment: 'ignored',
+    errorCode: error?.code ?? 'UNKNOWN',
+    error: error?.message,
+    ...(error?.status !== undefined ? { status: error.status } : {}),
+    ...extra,
+  })
+}
+
+async function discoverProviderTask(
+  config: any,
+  task: ProviderDiscoveryTask,
+  logger: PluginLogger,
+  options?: EnhanceConfigOptions,
+): Promise<ProviderDiscoveryResult> {
+  const p = task.provider
+
+  if (options?.signal?.aborted) {
+    return { kind: 'aborted', providerName: task.providerName }
+  }
+
+  try {
+    let persistedState: ProviderModelState | undefined
+    let usingPersistedModels = false
+    let apiKey: string | undefined
+    let models: OpenAIModel[] = []
+    let discoveredModels: Record<string, any> = {}
+
+    if (task.cacheEnabled) {
+      persistedState = await currentProviderModelStore.read(task.cacheIdentity)
+      if (persistedState && isInventoryFresh(persistedState, task.ttlSeconds)) {
+        discoveredModels = persistedState.models
+        usingPersistedModels = true
+        discoveredModels = await invalidateStaleReasoningVariants(
+          task.providerDiscoveryConfig,
+          persistedState,
+          discoveredModels,
+          logger.child({ category: 'reasoning' }),
+        )
+      } else {
+        apiKey = await getProviderApiKey(task.providerName, p, logger)
+        if (options?.signal?.aborted) {
+          return { kind: 'aborted', providerName: task.providerName }
+        }
+        const discovery = await discoverModelsFromProvider(
+          task.baseURL,
+          apiKey,
+          task.modelsEndpoint,
+          task.timeoutMs,
+          options?.signal,
+        )
+        if (!discovery.ok) {
+          if (options?.signal?.aborted) {
+            logger.warn('Discovery aborted before failure publication; config untouched', { provider: task.providerName })
+            return { kind: 'aborted', providerName: task.providerName }
+          }
+          logProviderDiscoveryFailure(logger, task, discovery.error)
+          // An expired cache must not remain visible after a failed refresh,
+          // but user-authored models remain available for this provider.
+          return {
+            kind: 'clear-explicit',
+            providerName: task.providerName,
+            provider: p,
+            models: getExplicitModels(config, task.providerName, p.models || {}),
+          }
+        }
+
+        models = discovery.models.filter(isValidModel)
+      }
+    } else {
+      apiKey = await getProviderApiKey(task.providerName, p, logger)
+      if (options?.signal?.aborted) {
+        return { kind: 'aborted', providerName: task.providerName }
+      }
+      const discovery = await discoverModelsFromProvider(
+        task.baseURL,
+        apiKey,
+        task.modelsEndpoint,
+        task.timeoutMs,
+        options?.signal,
+      )
+      if (!discovery.ok) {
+        if (options?.signal?.aborted) {
+          return { kind: 'aborted', providerName: task.providerName }
+        }
+        logProviderDiscoveryFailure(logger, task, discovery.error)
+        return { kind: 'skip', providerName: task.providerName }
+      }
+      models = discovery.models.filter(isValidModel)
+    }
+
+    let modelInfoEnricher: ModelInfoEnricher | undefined
+    let modelsDevCache: Map<string, ModelsDevModel> | undefined
+    if (!usingPersistedModels && task.modelInfoFormat && !isSupportedModelInfoFormat(task.modelInfoFormat)) {
+      logger.warn('Unsupported provider model info format', {
+        provider: task.providerName,
+        format: task.modelInfoFormat,
+      })
+    } else if (!usingPersistedModels && task.modelInfoFormat === ModelInfoFormat.ModelsDev) {
+      modelsDevCache = await fetchModelsDevData()
+      modelInfoEnricher = createModelInfoEnricher(task.modelInfoFormat, modelsDevCache, { filterNonChat: task.filterNonChat })
+      logger.info('Loaded models.dev data', {
+        provider: task.providerName,
+        count: modelsDevCache.size,
+      })
+    } else if (!usingPersistedModels && (task.modelInfoFormat === ModelInfoFormat.Bifrost || task.modelInfoFormat === ModelInfoFormat.OmniRoute || task.modelInfoFormat === ModelInfoFormat.VLLM)) {
+      modelInfoEnricher = createModelInfoEnricher(task.modelInfoFormat, null)
+    } else if (!usingPersistedModels && task.modelInfoFormat === ModelInfoFormat.LMStudio) {
+      const modelInfoEndpoint = task.providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
+      const modelInfoDiscovery = await discoverModelInfoFromProvider(
+        task.baseURL,
+        apiKey,
+        modelInfoEndpoint,
+        task.timeoutMs,
+        options?.signal,
+      )
+      if (modelInfoDiscovery.ok) {
+        modelInfoEnricher = createModelInfoEnricher(task.modelInfoFormat, modelInfoDiscovery.data)
+      } else {
+        logger.warn('Provider model info discovery failed', {
+          provider: task.providerName,
+          baseURL: task.baseURL,
+          endpoint: modelInfoEndpoint,
+          format: task.modelInfoFormat,
+          transport: 'direct',
+          proxyEnvironment: 'ignored',
+          errorCode: modelInfoDiscovery.error?.code ?? 'UNKNOWN',
+          error: modelInfoDiscovery.error?.message,
+          ...(modelInfoDiscovery.error?.status !== undefined ? { status: modelInfoDiscovery.error.status } : {}),
+        })
+      }
+    } else if (!usingPersistedModels && task.modelInfoFormat === ModelInfoFormat.LiteLLM) {
+      const modelInfoEndpoint = task.providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LITELLM_MODEL_INFO_ENDPOINT
+      const modelInfoDiscovery = await discoverModelInfoFromProvider(
+        task.baseURL,
+        apiKey,
+        modelInfoEndpoint,
+        task.timeoutMs,
+        options?.signal,
+      )
+      if (modelInfoDiscovery.ok) {
+        modelInfoEnricher = createModelInfoEnricher(task.modelInfoFormat, modelInfoDiscovery.data, { filterNonChat: task.filterNonChat })
+      } else {
+        logger.warn('Provider model info discovery failed', {
+          provider: task.providerName,
+          baseURL: task.baseURL,
+          endpoint: modelInfoEndpoint,
+          format: task.modelInfoFormat,
+          transport: 'direct',
+          proxyEnvironment: 'ignored',
+          errorCode: modelInfoDiscovery.error?.code ?? 'UNKNOWN',
+          error: modelInfoDiscovery.error?.message,
+          ...(modelInfoDiscovery.error?.status !== undefined ? { status: modelInfoDiscovery.error.status } : {}),
+        })
+      }
+    }
+
+    const existingModels = getExplicitModels(config, task.providerName, p.models || {})
+    const reasoningResolutions: ResolvedReasoning[] = []
+    const hasProviderModelRegexFilter = !!task.providerDiscoveryConfig.models?.includeRegex?.length || !!task.providerDiscoveryConfig.models?.excludeRegex?.length
+    const providerModelRegexFilter = getProviderModelRegexFilter(task.providerDiscoveryConfig, logger.child({ category: 'filtering' }))
+    const providerModelFieldFilters = getProviderModelFieldFilters(task.providerDiscoveryConfig, logger.child({ category: 'filtering' }))
+    const smartModelNameEnabled = task.providerDiscoveryConfig.smartModelName === true
+
+    if (!usingPersistedModels) {
+      for (const model of models) {
+        const modelKey = model.id
+        if (!shouldDiscoverModelByFields(model, providerModelFieldFilters)) {
+          continue
+        }
+
+        if (hasProviderModelRegexFilter && !shouldDiscoverModel(model.id, providerModelRegexFilter)) {
+          continue
+        }
+
+        const modelType = categorizeModel(model.id)
+        if (modelType === 'embedding') {
+          continue
+        }
+
+        if (modelInfoEnricher?.shouldSkipModel(model.id)) {
+          continue
+        }
+
+        const owner = extractModelOwner(model.id)
+        const modelConfig: any = {
+          id: model.id,
+          name: smartModelNameEnabled ? modelInfoEnricher?.getModelName?.(model.id, model) ?? formatModelName(model) : model.id,
+        }
+
+        if (owner) {
+          modelConfig.organizationOwner = owner
+        }
+
+        if (modelType === 'chat') {
+          modelConfig.modalities = {
+            input: ["text"],
+            output: ["text"]
+          }
+        }
+
+        modelInfoEnricher?.applyModelInfo(modelConfig, model.id, model)
+
+        if (task.providerDiscoveryConfig.reasoning?.enabled !== false) {
+          const enrichment = applyReasoningEnrichment({
+            modelConfig,
+            modelId: model.id,
+            providerId: task.providerName,
+            providerConfig: p,
+            discoveryConfig: task.providerDiscoveryConfig,
+            modelsDevIndex: modelsDevCache,
+            providerMetadata: model,
+            registry: await getBundledRegistry(),
+            outputLimit: modelConfig.limit?.output,
+            log: (message, extra) => logger.info(message, extra),
+          })
+          if (enrichment.resolution) {
+            reasoningResolutions.push(enrichment.resolution)
+          }
+        }
+
+        discoveredModels[modelKey] = modelConfig
+      }
+
+      if (reasoningResolutions.length > 0) {
+        const coverage = buildReasoningCoverageReport(task.providerName, reasoningResolutions)
+        logger.info('[reasoning-summary]', { ...coverage.summary })
+      }
+
+      if (task.cacheEnabled) {
+        const reasoningFingerprint = await computeCurrentReasoningFingerprint(task.providerDiscoveryConfig)
+        if (!await currentProviderModelStore.saveModels(task.cacheIdentity, discoveredModels, persistedState, reasoningFingerprint)) {
+          logger.debug('Could not persist discovered provider models', { provider: task.providerName })
+        }
+      }
+    }
+
+    const modelsWithOverrides = Object.fromEntries(Object.entries(discoveredModels).map(([modelID, model]) => [
+      modelID,
+      mergeModelOverride(model, persistedState?.overrides?.[modelID]),
+    ]))
+    const modelsWithExplicitConfig = Object.fromEntries(Object.entries(existingModels).map(([modelID, model]) => [
+      modelID,
+      modelID in modelsWithOverrides ? mergeModelOverride(modelsWithOverrides[modelID], model) : model,
+    ]))
+
+    if (options?.signal?.aborted) {
+      logger.warn('Discovery deadline exceeded before publication; config untouched', {
+        provider: task.providerName,
+      })
+      return { kind: 'aborted', providerName: task.providerName }
+    }
+
+    return {
+      kind: 'publish',
+      providerName: task.providerName,
+      provider: p,
+      baseURL: task.baseURL,
+      models: {
+        ...modelsWithOverrides,
+        ...modelsWithExplicitConfig,
+      },
+      injectedModels: modelsWithOverrides,
+    }
+  } catch (error) {
+    if (options?.signal?.aborted) {
+      logger.warn('Discovery deadline exceeded before publication; config untouched', {
+        provider: task.providerName,
+      })
+      return { kind: 'aborted', providerName: task.providerName }
+    }
+    logger.error('Provider discovery worker failed', {
+      provider: task.providerName,
+      error: error instanceof Error ? error.message : String(error),
+    })
+    return { kind: 'skip', providerName: task.providerName }
+  }
+}
+
 export async function enhanceConfig(
   config: any,
   client: PluginInput['client'],
@@ -253,9 +608,9 @@ export async function enhanceConfig(
 ): Promise<void> {
   try {
     const providers = config.provider || {}
-    const openAICompatibleProviders: DiscoveredProvider[] = []
     const discoveryConfig = getDefaultDiscoveryConfigFromEnv(logger.child({ category: 'config' }))
     const defaultDiscoveryEnabled = discoveryConfig.enabled
+    const tasks: ProviderDiscoveryTask[] = []
 
     for (const [providerName, providerConfig] of Object.entries(providers)) {
       const p = providerConfig as any
@@ -272,7 +627,6 @@ export async function enhanceConfig(
         continue
       }
 
-      // Deadline already fired: stop starting any new provider work.
       if (options?.signal?.aborted) {
         break
       }
@@ -294,8 +648,6 @@ export async function enhanceConfig(
       }
 
       let baseURL: string
-      const displayName = providerName
-
       if (p.options?.baseURL) {
         baseURL = normalizeBaseURL(p.options.baseURL)
       } else {
@@ -310,219 +662,83 @@ export async function enhanceConfig(
         baseURL,
         endpoint: modelsEndpoint,
       }
-      let persistedState: ProviderModelState | undefined
-      let usingPersistedModels = false
-      let apiKey: string | undefined
+      tasks.push({
+        providerName,
+        provider: p,
+        baseURL,
+        modelsEndpoint,
+        timeoutMs,
+        modelInfoFormat,
+        filterNonChat,
+        providerDiscoveryConfig,
+        cacheEnabled,
+        ttlSeconds,
+        cacheIdentity,
+      })
+    }
 
-      let models: OpenAIModel[] = []
-      let discoveredModels: Record<string, any> = {}
-      if (cacheEnabled) {
-        persistedState = await currentProviderModelStore.read(cacheIdentity)
-        if (persistedState && isInventoryFresh(persistedState, ttlSeconds)) {
-          discoveredModels = persistedState.models
-          usingPersistedModels = true
-          discoveredModels = await invalidateStaleReasoningVariants(
-            providerDiscoveryConfig,
-            persistedState,
-            discoveredModels,
-            logger.child({ category: 'reasoning' }),
-          )
-        } else {
-          apiKey = await getProviderApiKey(providerName, p, logger)
-          const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs, options?.signal)
-          if (!discovery.ok) {
-            if (options?.signal?.aborted) {
-              logger.warn('Discovery aborted before failure publication; config untouched', { provider: providerName })
-              break
-            }
-            const existingModels = getExplicitModels(config, providerName, p.models || {})
-            p.models = existingModels
-            replaceInjectedModels(config, providerName, {})
-            logger.warn('Provider model discovery failed', {
-              provider: providerName,
-              baseURL,
-              endpoint: modelsEndpoint,
-            })
-            continue
-          }
+    const selectedProvider = selectedProviderName(config, providers)
+    const orderedTasks = prioritizeSelectedProvider(tasks, selectedProvider)
+    logger.debug('Provider discovery schedule prepared', {
+      providerCount: orderedTasks.length,
+      selectedProvider: selectedProvider ?? null,
+      execution: 'parallel',
+    })
 
-          models = discovery.models.filter(isValidModel)
-        }
-      } else {
-        apiKey = await getProviderApiKey(providerName, p, logger)
-        const discovery = await discoverModelsFromProvider(baseURL, apiKey, modelsEndpoint, timeoutMs, options?.signal)
-        if (!discovery.ok) {
-          logger.warn('Provider model discovery failed', {
-            provider: providerName,
-            baseURL,
-            endpoint: modelsEndpoint,
-          })
-          continue
-        }
-        models = discovery.models.filter(isValidModel)
+    // Start every independent provider in priority order. The selected
+    // provider is started first, while all providers still share the same
+    // startup deadline and cannot publish after its signal is aborted.
+    const openAICompatibleProviders: DiscoveredProvider[] = []
+
+    const publishProviderResult = (providerResult: ProviderDiscoveryResult): void => {
+      if (providerResult.kind === 'aborted') {
+        return
       }
-
-      let modelInfoEnricher: ModelInfoEnricher | undefined
-      let modelsDevCache: Map<string, ModelsDevModel> | undefined
-      if (!usingPersistedModels && modelInfoFormat && !isSupportedModelInfoFormat(modelInfoFormat)) {
-        logger.warn('Unsupported provider model info format', {
-          provider: providerName,
-          format: modelInfoFormat,
-        })
-      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.ModelsDev) {
-        modelsDevCache = await fetchModelsDevData()
-        modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelsDevCache, { filterNonChat })
-        logger.info('Loaded models.dev data', {
-          provider: providerName,
-          count: modelsDevCache.size,
-        })
-      } else if (!usingPersistedModels && (modelInfoFormat === ModelInfoFormat.Bifrost || modelInfoFormat === ModelInfoFormat.OmniRoute || modelInfoFormat === ModelInfoFormat.VLLM)) {
-        modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, null)
-      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LMStudio) {
-        const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LMSTUDIO_MODELS_ENDPOINT
-        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs, options?.signal)
-        if (modelInfoDiscovery.ok) {
-          modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data)
-        } else {
-          logger.warn('Provider model info discovery failed', {
-            provider: providerName,
-            baseURL,
-            endpoint: modelInfoEndpoint,
-            format: modelInfoFormat,
-          })
-        }
-      } else if (!usingPersistedModels && modelInfoFormat === ModelInfoFormat.LiteLLM) {
-        const modelInfoEndpoint = providerDiscoveryConfig.modelInfoEndpoint ?? DEFAULT_LITELLM_MODEL_INFO_ENDPOINT
-        const modelInfoDiscovery = await discoverModelInfoFromProvider(baseURL, apiKey, modelInfoEndpoint, timeoutMs, options?.signal)
-        if (modelInfoDiscovery.ok) {
-          modelInfoEnricher = createModelInfoEnricher(modelInfoFormat, modelInfoDiscovery.data, { filterNonChat })
-        } else {
-          logger.warn('Provider model info discovery failed', {
-            provider: providerName,
-            baseURL,
-            endpoint: modelInfoEndpoint,
-            format: modelInfoFormat,
-          })
-        }
+      if (providerResult.kind === 'skip') {
+        return
       }
-
-      const existingModels = getExplicitModels(config, providerName, p.models || {})
-      const reasoningResolutions: ResolvedReasoning[] = []
-
-      const hasProviderModelRegexFilter = !!providerDiscoveryConfig.models?.includeRegex?.length || !!providerDiscoveryConfig.models?.excludeRegex?.length
-      const providerModelRegexFilter = getProviderModelRegexFilter(providerDiscoveryConfig, logger.child({ category: 'filtering' }))
-      const providerModelFieldFilters = getProviderModelFieldFilters(providerDiscoveryConfig, logger.child({ category: 'filtering' }))
-      const smartModelNameEnabled = providerDiscoveryConfig.smartModelName === true
-
-      if (!usingPersistedModels) {
-        for (const model of models) {
-          const modelKey = model.id
-          if (!shouldDiscoverModelByFields(model, providerModelFieldFilters)) {
-            continue
-          }
-
-          if (hasProviderModelRegexFilter && !shouldDiscoverModel(model.id, providerModelRegexFilter)) {
-            continue
-          }
-
-          const modelType = categorizeModel(model.id)
-          if (modelType === 'embedding') {
-            continue
-          }
-
-          if (modelInfoEnricher?.shouldSkipModel(model.id)) {
-            continue
-          }
-
-          const owner = extractModelOwner(model.id)
-          const modelConfig: any = {
-            id: model.id,
-            name: smartModelNameEnabled ? modelInfoEnricher?.getModelName?.(model.id, model) ?? formatModelName(model) : model.id,
-          }
-
-          if (owner) {
-            modelConfig.organizationOwner = owner
-          }
-
-          if (modelType === 'chat') {
-            modelConfig.modalities = {
-              input: ["text"],
-              output: ["text"]
-            }
-          }
-
-          modelInfoEnricher?.applyModelInfo(modelConfig, model.id, model)
-
-          if (providerDiscoveryConfig.reasoning?.enabled !== false) {
-            const enrichment = applyReasoningEnrichment({
-              modelConfig,
-              modelId: model.id,
-              providerId: providerName,
-              providerConfig: p,
-              discoveryConfig: providerDiscoveryConfig,
-              modelsDevIndex: modelsDevCache,
-              providerMetadata: model,
-              registry: await getBundledRegistry(),
-              outputLimit: modelConfig.limit?.output,
-              log: (message, extra) => logger.info(message, extra),
-            })
-            if (enrichment.resolution) {
-              reasoningResolutions.push(enrichment.resolution)
-            }
-          }
-
-          discoveredModels[modelKey] = modelConfig
-        }
-
-        if (reasoningResolutions.length > 0) {
-          const coverage = buildReasoningCoverageReport(providerName, reasoningResolutions)
-          logger.info('[reasoning-summary]', { ...coverage.summary })
-        }
-
-        if (cacheEnabled) {
-          const reasoningFingerprint = await computeCurrentReasoningFingerprint(providerDiscoveryConfig)
-          if (!await currentProviderModelStore.saveModels(cacheIdentity, discoveredModels, persistedState, reasoningFingerprint)) {
-            logger.debug('Could not persist discovered provider models', { provider: providerName })
-          }
-        }
-      }
-
-      const modelsWithOverrides = Object.fromEntries(Object.entries(discoveredModels).map(([modelID, model]) => [
-        modelID,
-        mergeModelOverride(model, persistedState?.overrides?.[modelID]),
-      ]))
-      const modelsWithExplicitConfig = Object.fromEntries(Object.entries(existingModels).map(([modelID, model]) => [
-        modelID,
-        modelID in modelsWithOverrides ? mergeModelOverride(modelsWithOverrides[modelID], model) : model,
-      ]))
-
       if (options?.signal?.aborted) {
-        // v3 §3.1 blocking invariant: after the hook deadline the returned
-        // config is immutable for this pass. Cache writes above stay valid
-        // (same-identity warm), but no late config publication.
-        logger.warn('Discovery deadline exceeded before publication; config untouched', {
-          provider: providerName,
-        })
-        break
+        logger.warn('Discovery deadline exceeded before publication; config untouched')
+        return
       }
 
-      p.models = {
-        ...modelsWithOverrides,
-        ...modelsWithExplicitConfig,
+      if (providerResult.kind === 'clear-explicit') {
+        providerResult.provider.models = providerResult.models
+        replaceInjectedModels(config, providerResult.providerName, {})
+        return
       }
-      replaceInjectedModels(config, providerName, modelsWithOverrides)
 
-      if (Object.keys(modelsWithOverrides).length > 0) {
+      providerResult.provider.models = providerResult.models
+      replaceInjectedModels(config, providerResult.providerName, providerResult.injectedModels)
+      if (Object.keys(providerResult.injectedModels).length > 0) {
         openAICompatibleProviders.push({
-          name: displayName,
-          baseURL,
-          models: modelsWithOverrides
+          name: providerResult.providerName,
+          baseURL: providerResult.baseURL,
+          models: providerResult.injectedModels,
         })
       }
     }
 
+    // Each provider publishes as soon as its own worker settles. Waiting for
+    // all workers only provides lifecycle cleanup; it must never hold a fast
+    // provider behind a slow or hung provider.
+    const jobs = orderedTasks.map((task) => discoverProviderTask(config, task, logger, options)
+      .then((providerResult) => {
+        publishProviderResult(providerResult)
+        return providerResult
+      })
+      .catch((error): ProviderDiscoveryResult => {
+        logger.error('Provider discovery worker rejected', {
+          provider: task.providerName,
+          error: error instanceof Error ? error.message : String(error),
+        })
+        return { kind: 'skip', providerName: task.providerName }
+      }))
+
+    await Promise.allSettled(jobs)
+
     if (openAICompatibleProviders.length > 0) {
-      const totalModels = openAICompatibleProviders.reduce((sum, p) => sum + Object.keys(p.models).length, 0)
+      const totalModels = openAICompatibleProviders.reduce((sum, provider) => sum + Object.keys(provider.models).length, 0)
       logger.info('Provider model discovery completed', {
         providerCount: openAICompatibleProviders.length,
         modelCount: totalModels,

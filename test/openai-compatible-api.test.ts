@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import { createServer, type Server } from 'node:http'
 import { discoverModelsFromProvider } from '../src/utils/openai-compatible-api'
 
@@ -60,7 +60,7 @@ describe('OpenAI-compatible API discovery', () => {
     }, async (baseURL) => {
       const result = await discoverModelsFromProvider(baseURL)
 
-      expect(result).toEqual({ ok: false, models: [] })
+      expect(result).toMatchObject({ ok: false, models: [], error: { code: 'HTTP_STATUS', status: 500 } })
     })
   })
 
@@ -71,7 +71,7 @@ describe('OpenAI-compatible API discovery', () => {
     }, async (baseURL) => {
       const result = await discoverModelsFromProvider(baseURL)
 
-      expect(result).toEqual({ ok: false, models: [] })
+      expect(result).toMatchObject({ ok: false, models: [], error: { code: 'INVALID_JSON' } })
     })
   })
 
@@ -84,7 +84,7 @@ describe('OpenAI-compatible API discovery', () => {
     }, async (baseURL) => {
       const result = await discoverModelsFromProvider(baseURL)
 
-      expect(result).toEqual({ ok: false, models: [] })
+      expect(result).toMatchObject({ ok: false, models: [], error: { code: 'TIMEOUT' } })
     })
   })
 
@@ -97,14 +97,14 @@ describe('OpenAI-compatible API discovery', () => {
     }, async (baseURL) => {
       const result = await discoverModelsFromProvider(baseURL, undefined, '/v1/models', 10)
 
-      expect(result).toEqual({ ok: false, models: [] })
+      expect(result).toMatchObject({ ok: false, models: [], error: { code: 'TIMEOUT' } })
     })
   })
 
   it('returns ok false for transport errors', async () => {
     const result = await discoverModelsFromProvider('http://127.0.0.1:1')
 
-    expect(result).toEqual({ ok: false, models: [] })
+    expect(result).toMatchObject({ ok: false, models: [], error: { code: 'NETWORK_ERROR' } })
   })
 
   it('passes authorization headers and supports custom endpoints', async () => {
@@ -124,4 +124,23 @@ describe('OpenAI-compatible API discovery', () => {
       expect(result.models.map(model => model.id)).toEqual(['custom-model'])
     })
   })
+
+  it('ignores proxy environment variables for provider discovery', async () => {
+    vi.stubEnv('HTTP_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('HTTPS_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('ALL_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('NO_PROXY', '')
+
+    await withServer((_req, res) => {
+      res.writeHead(200, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ data: [{ id: 'direct-model' }] }))
+    }, async (baseURL) => {
+      const result = await discoverModelsFromProvider(baseURL)
+      expect(result).toMatchObject({ ok: true, models: [{ id: 'direct-model' }] })
+    })
+  })
+})
+
+afterEach(() => {
+  vi.unstubAllEnvs()
 })

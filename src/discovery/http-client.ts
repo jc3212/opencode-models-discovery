@@ -18,6 +18,8 @@
  *   streamed bodies are cut off mid-read once the cap is exceeded.
  */
 
+import { directFetch } from '../utils/direct-http'
+
 export type DiscoveryHttpErrorCode =
   | 'INSECURE_URL'
   | 'UNSUPPORTED_SCHEME'
@@ -51,6 +53,8 @@ export type FetchLike = (url: string, init?: {
   headers: Record<string, string>
   redirect: 'manual'
   signal?: AbortSignal
+  timeoutMs?: number
+  maxBytes?: number
 }) => Promise<Response>
 
 export interface HttpResponseSpec {
@@ -68,6 +72,7 @@ export interface HttpRequestSpec {
   method?: 'GET' | 'HEAD'
   headers?: Record<string, string>
   signal?: AbortSignal
+  timeoutMs?: number
   maxBytes?: number
   maxRedirects?: number
 }
@@ -160,7 +165,7 @@ async function readBodyCapped(response: Response, maxBytes: number, url: string)
  */
 export async function executeDiscoveryRequest(
   spec: HttpRequestSpec,
-  fetchImpl: FetchLike,
+  fetchImpl: FetchLike = directFetch,
 ): Promise<HttpResponseSpec> {
   const maxRedirects = spec.maxRedirects ?? DEFAULT_MAX_REDIRECTS
   const maxBytes = spec.maxBytes ?? DEFAULT_MAX_BYTES
@@ -187,6 +192,8 @@ export async function executeDiscoveryRequest(
         headers,
         redirect: 'manual',
         signal: spec.signal,
+        timeoutMs: spec.timeoutMs,
+        maxBytes: spec.maxBytes,
       })
     } catch (error) {
       if (spec.signal?.aborted || (error as Error)?.name === 'AbortError') {

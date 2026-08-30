@@ -1,4 +1,5 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
+import { createServer } from 'node:http'
 import {
   DiscoveryHttpError,
   assertRequestUrlAllowed,
@@ -76,6 +77,28 @@ describe('URL security gate', () => {
 })
 
 describe('plain requests', () => {
+  it('uses the direct transport by default', async () => {
+    const server = createServer((_req, res) => {
+      res.writeHead(200, { 'content-type': 'application/json' })
+      res.end('{"direct":true}')
+    })
+    await new Promise<void>((resolve) => server.listen(0, '127.0.0.1', resolve))
+    const address = server.address()
+    if (!address || typeof address === 'string') throw new Error('Unable to determine test server address')
+
+    vi.stubEnv('HTTP_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('HTTPS_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('ALL_PROXY', 'socks5h://127.0.0.1:20123')
+    vi.stubEnv('NO_PROXY', '')
+    try {
+      const response = await executeDiscoveryRequest({ url: `http://127.0.0.1:${address.port}/v1/models` })
+      expect(response.bodyText).toBe('{"direct":true}')
+    } finally {
+      vi.unstubAllEnvs()
+      await new Promise<void>((resolve) => server.close(() => resolve()))
+    }
+  })
+
   it('returns status, picked headers and body without redirects', async () => {
     const calls: RecordedCall[] = []
     const fetchImpl = makeFetch(

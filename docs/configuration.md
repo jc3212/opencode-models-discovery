@@ -63,6 +63,10 @@ Recommended approach:
 
 If `provider.<name>.options.modelsDiscovery.endpoint` is omitted, the plugin uses `/v1/models`.
 
+Runtime discovery requests use a plugin-owned direct TCP/TLS transport and do
+not inherit `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, or `NO_PROXY`. This policy
+does not change the transport used by OpenCode for actual inference requests.
+
 The config hook waits up to `5000` milliseconds for discovery by default. When one or more providers set `modelsDiscovery.timeoutMs` above that value, the hook uses the largest configured provider timeout instead. This gives a slow provider enough time to inject its discovered models before OpenCode continues startup.
 
 For a provider whose models or provider-specific metadata endpoint needs more than the default `3000` milliseconds, configure a larger timeout on that provider:

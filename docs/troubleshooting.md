@@ -6,6 +6,25 @@
 - Verify the provider `/v1/models` endpoint is reachable and returns a model list.
 - Confirm credentials resolve (option `apiKey` or OpenCode `/connect`).
 
+## Provider discovery and proxy variables
+
+The plugin's runtime discovery traffic uses its own direct TCP/TLS transport.
+It intentionally ignores `HTTP_PROXY`, `HTTPS_PROXY`, `ALL_PROXY`, and
+`NO_PROXY`; this applies to `/v1/models`, custom model endpoints, and model
+information requests. OpenCode's inference request remains a separate path
+and is not changed by the plugin.
+
+If discovery fails, inspect the structured fields in the startup log:
+`transport=direct`, `proxyEnvironment=ignored`, and `errorCode`. A direct
+connection can still fail with an HTTP status, timeout, or network error; that
+is reported as a discovery failure and does not prove that inference is
+available.
+
+Do not work around this by changing `process.env` or setting a process-wide
+`NO_PROXY` value inside the plugin. Those changes can affect OpenCode and
+other plugins. If a deployment requires a proxy-only network path, configure
+the provider's explicit models or use a separately managed network route.
+
 ## Models appear but have no reasoning variants
 
 Run the audit to see exactly why:

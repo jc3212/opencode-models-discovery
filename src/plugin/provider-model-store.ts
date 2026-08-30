@@ -3,7 +3,10 @@ import path from 'node:path'
 import { xdgData } from 'xdg-basedir'
 import { isValidModel } from '../utils/openai-compatible-api'
 
-const STATE_VERSION = 2
+// Direct transport is part of the inventory contract. Bump the state version
+// so an inventory created under the proxy-sensitive client cannot mask a
+// first successful direct refresh with a stale empty result.
+const STATE_VERSION = 3
 const PLUGIN_DATA_DIRECTORY = '@jc3212/opencode-models-discovery'
 const PROVIDERS_DIRECTORY = 'providers'
 

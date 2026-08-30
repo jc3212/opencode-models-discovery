@@ -38,7 +38,7 @@ describe('ProviderModelStore', () => {
 
       const state = await store.read(identity)
       expect(state).toMatchObject({
-        version: 2,
+        version: 3,
         provider: identity,
         models: { qwen: { id: 'qwen', name: 'Qwen', limit: { context: 32768 } }, },
       })
@@ -53,7 +53,7 @@ describe('ProviderModelStore', () => {
     try {
       const store = new ProviderModelStore(root)
       const previous = {
-        version: 2 as const,
+        version: 3 as const,
         provider: identity,
         fetchedAt: new Date().toISOString(),
         models: { old: { id: 'old', name: 'Old' } },
@@ -73,7 +73,7 @@ describe('ProviderModelStore', () => {
   it('handles TTL boundaries and merges overrides without allowing id changes', () => {
     const now = Date.now()
     const state = {
-      version: 2 as const,
+      version: 3 as const,
       provider: identity,
       fetchedAt: new Date(now - 1000).toISOString(),
       models: { qwen: { id: 'qwen', name: 'Qwen' } },

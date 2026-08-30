@@ -4,7 +4,7 @@ import path from 'node:path'
 import os from 'node:os'
 import { ModelDiscoveryPlugin } from '../src/index'
 import { ProviderModelStore } from '../src/plugin/provider-model-store'
-import { providerModelStoreTestUtils } from '../src/plugin/enhance-config'
+import { enhanceConfig, providerModelStoreTestUtils } from '../src/plugin/enhance-config'
 import { modelsDevTestUtils } from '../src/utils/models-dev-fetcher'
 import { loadRegistry } from '../src/reasoning/registry/loader'
 import { applyReasoningEnrichment } from '../src/reasoning/enricher'
@@ -28,6 +28,18 @@ vi.mock('../src/utils/openai-compatible-api', async (importOriginal) => {
   }
 })
 global.fetch = mockFetch
+
+const logger = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  child: () => logger,
+}
+const toastNotifier = {
+  error: vi.fn().mockResolvedValue(undefined),
+  warning: vi.fn().mockResolvedValue(undefined),
+}
 
 /**
  * Failure injection (design §50-51, §11).
@@ -111,6 +123,52 @@ describe('failure injection', () => {
     await pluginHooks.config(config)
     // B still discovers its model despite A failing.
     expect(config.provider.b.models['model-b']).toBeDefined()
+  })
+
+  it('publishes the selected provider before a slow provider completes', async () => {
+    let releaseSlow!: () => void
+    const slowResponse = new Promise<{ ok: boolean; json: () => Promise<unknown> }>((resolve) => {
+      releaseSlow = () => resolve({
+        ok: true,
+        json: async () => ({ object: 'list', data: [{ id: 'slow-model' }] }),
+      })
+    })
+    mockFetch.mockImplementation((url: string) => {
+      if (url.includes('slow.example.com')) return slowResponse
+      return Promise.resolve({
+        ok: true,
+        json: async () => ({ object: 'list', data: [{ id: 'selected-model' }] }),
+      })
+    })
+    process.env.OPENCODE_AUTH_CONTENT = '{}'
+
+    const config: any = {
+      model: 'selected/selected-model',
+      provider: {
+        slow: {
+          npm: '@ai-sdk/openai-compatible',
+          options: { baseURL: 'https://slow.example.com/v1', modelsDiscovery: { enabled: true } },
+          models: {},
+        },
+        selected: {
+          npm: '@ai-sdk/openai-compatible',
+          options: { baseURL: 'https://selected.example.com/v1', modelsDiscovery: { enabled: true } },
+          models: {},
+        },
+      },
+    }
+
+    const enhancement = enhanceConfig(config, mockClient as any, toastNotifier as any, {}, logger)
+    await vi.waitFor(() => {
+      expect(config.provider.selected.models['selected-model']).toBeDefined()
+    }, { timeout: 1000, interval: 5 })
+    expect(mockFetch.mock.calls[0]?.[0]).toContain('selected.example.com')
+    expect(config.provider.selected.models['selected-model']).toBeDefined()
+    expect(config.provider.slow.models).toEqual({})
+
+    releaseSlow()
+    await enhancement
+    expect(config.provider.slow.models['slow-model']).toBeDefined()
   })
 
   it('malformed provider metadata never throws in the enricher', () => {

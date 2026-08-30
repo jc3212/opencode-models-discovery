@@ -1,6 +1,5 @@
-import http from 'node:http'
-import https from 'node:https'
 import type { OpenAIModel, OpenAIModelsResponse } from '../types'
+import { DirectHttpError, requestDirectHttp, type DirectHttpErrorCode } from './direct-http'
 
 const OPENAI_COMPATIBLE_MODELS_ENDPOINT = "/v1/models"
 export const DEFAULT_REQUEST_TIMEOUT_MS = 3000
@@ -17,16 +16,22 @@ export const MAX_MODEL_ID_LENGTH = 200
 export const MAX_DISCOVERED_MODELS = 2000
 /** Object keys that would mutate Object.prototype if used as config keys. */
 const PROTOTYPE_POLLUTION_KEYS = new Set(['__proto__', 'constructor', 'prototype'])
-const REQUEST_USER_AGENT = 'opencode-models-discovery-jc3212'
-
 export interface ModelsDiscoveryResult {
   ok: boolean
   models: OpenAIModel[]
+  error?: DiscoveryRequestFailure
 }
 
 export interface ModelInfoDiscoveryResult {
   ok: boolean
   data: unknown
+  error?: DiscoveryRequestFailure
+}
+
+export interface DiscoveryRequestFailure {
+  code: DirectHttpErrorCode | 'HTTP_STATUS' | 'INVALID_JSON'
+  message: string
+  status?: number
 }
 
 export function normalizeBaseURL(baseURL: string): string {
@@ -42,71 +47,41 @@ export function buildAPIURL(baseURL: string, endpoint: string = OPENAI_COMPATIBL
   return `${normalized}${endpoint}`
 }
 
-function requestJson<T>(urlStr: string, headers: Record<string, string>, timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS, signal?: AbortSignal): Promise<T | undefined> {
-  return new Promise((resolve) => {
-    let settled = false
-    const finish = (data: T | undefined) => {
-      if (!settled) {
-        settled = true
-        cleanup()
-        resolve(data)
+async function requestJson<T>(
+  urlStr: string,
+  headers: Record<string, string>,
+  timeoutMs: number = DEFAULT_REQUEST_TIMEOUT_MS,
+  signal?: AbortSignal,
+): Promise<{ data?: T; error?: DiscoveryRequestFailure }> {
+  try {
+    const response = await requestDirectHttp({
+      url: urlStr,
+      headers: { 'User-Agent': 'opencode-models-discovery-jc3212', ...headers },
+      timeoutMs,
+      signal,
+    })
+
+    if (response.status < 200 || response.status >= 300) {
+      return {
+        error: {
+          code: 'HTTP_STATUS',
+          message: `provider returned HTTP ${response.status}`,
+          status: response.status,
+        },
       }
     }
 
-    let urlObj: URL
     try {
-      urlObj = new URL(urlStr)
+      return { data: JSON.parse(response.bodyText) as T }
     } catch {
-      finish(undefined)
-      return
+      return { error: { code: 'INVALID_JSON', message: 'provider returned invalid JSON' } }
     }
-    const mod = urlObj.protocol === 'https:' ? https : http
-
-    const onAbort = () => finish(undefined)
-
-    const req = mod.get(urlObj, {
-      headers: { 'User-Agent': REQUEST_USER_AGENT, ...headers },
-      timeout: timeoutMs,
-    }, (res) => {
-      let data = ''
-      res.setEncoding('utf8')
-      res.on('data', (chunk: string) => data += chunk)
-      res.on('end', () => {
-        if (!res.statusCode || res.statusCode < 200 || res.statusCode >= 300) {
-          finish(undefined)
-          return
-        }
-
-        try {
-          finish(JSON.parse(data) as T)
-        } catch {
-          finish(undefined)
-        }
-      })
-      res.on('error', () => finish(undefined))
-    })
-
-    function cleanup(): void {
-      signal?.removeEventListener('abort', onAbort)
+  } catch (error) {
+    if (error instanceof DirectHttpError) {
+      return { error: { code: error.code, message: error.message } }
     }
-
-    req.on('error', () => finish(undefined))
-    req.on('timeout', () => {
-      req.destroy()
-      finish(undefined)
-    })
-
-    // Caller-initiated cancellation: destroy the socket immediately and settle
-    // as a failure. A result that arrives after abort is never published.
-    if (signal) {
-      if (signal.aborted) {
-        req.destroy()
-        finish(undefined)
-        return
-      }
-      signal.addEventListener('abort', onAbort, { once: true })
-    }
-  })
+    return { error: { code: 'NETWORK_ERROR', message: error instanceof Error ? error.message : String(error) } }
+  }
 }
 
 export async function discoverModelsFromProvider(
@@ -124,9 +99,9 @@ export async function discoverModelsFromProvider(
     headers["Authorization"] = `Bearer ${apiKey}`
   }
 
-  const data = await requestJson<OpenAIModelsResponse>(url, headers, timeoutMs, signal)
-  if (!data) return { ok: false, models: [] }
-  return { ok: true, models: sanitizeDiscoveredModels(data.data) }
+  const result = await requestJson<OpenAIModelsResponse>(url, headers, timeoutMs, signal)
+  if (!result.data) return { ok: false, models: [], error: result.error }
+  return { ok: true, models: sanitizeDiscoveredModels(result.data.data) }
 }
 
 /**
@@ -177,16 +152,18 @@ export async function discoverModelInfoFromProvider(
     headers["Authorization"] = `Bearer ${apiKey}`
   }
 
-  const data = await requestJson<unknown>(url, headers, timeoutMs, signal)
-  return data !== undefined ? { ok: true, data } : { ok: false, data: undefined }
+  const result = await requestJson<unknown>(url, headers, timeoutMs, signal)
+  return result.data !== undefined
+    ? { ok: true, data: result.data }
+    : { ok: false, data: undefined, error: result.error }
 }
 
 export async function fetchModelsDirect(baseURL: string, endpoint: string = OPENAI_COMPATIBLE_MODELS_ENDPOINT): Promise<string[]> {
   const url = buildAPIURL(baseURL, endpoint)
   const headers = { "Content-Type": "application/json" }
 
-  const data = await requestJson<OpenAIModelsResponse>(url, headers)
-  return data?.data?.map(model => model.id) || []
+  const result = await requestJson<OpenAIModelsResponse>(url, headers)
+  return result.data?.data?.map(model => model.id) || []
 }
 
 export function isOpenAICompatibleProvider(provider: any): boolean {
